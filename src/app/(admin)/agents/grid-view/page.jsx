@@ -6,8 +6,9 @@ import AgentData from './Components/AgentData';
 import AgentGridCard from './Components/AgentGridCard';
 const GridViewPage = () => {
   return <>
-      <PageTitle subName="" title="" />
+      <PageTitle subName="" title="Tenants" />
       <AgentGridCard />
+      <userData/>
       <Row>
         <Col lg={12}>
           <Card className="bg-body shadow-none">
@@ -15,7 +16,7 @@ const GridViewPage = () => {
               <Row className="justify-content-between align-items-center">
                 <Col lg={6}>
                   <p className="mb-0 text-muted">
-                    Showing all <span className="text-dark fw-semibold">311</span> Agent
+                    Showing all <span className="text-dark fw-semibold">311</span> Tenants
                   </p>
                 </Col>
                 <Col lg={6}>
@@ -26,6 +27,10 @@ const GridViewPage = () => {
                     </button>
                     <button type="button" className="btn btn-outline-primary me-1">
                       <IconifyIcon icon="ri:filter-line" className="me-1" /> Filters
+                    </button>
+                     <button type="button" className="btn btn-outline-primary me-1">
+                      <IconifyIcon icon="ri:settings-2-line" className="me-1" />
+                     + New Tenants
                     </button>
                     
                   </div>

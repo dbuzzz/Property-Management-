@@ -27,8 +27,9 @@ export const userData = [{
   name: 'Michael A. Miner',
   avatar: avatar1,
   languages: ['English', 'German', 'Spanish'],
-  email: 'daavidnumminen@teleworm.us',
-  contact: '+231 06-75820711',
+  email: 'Pending Rent : August,September',
+  
+  contact: 'OMN 5678',
   status: 'Active',
   mutualCount: 43,
   message: 'How are you today?',
@@ -43,7 +44,7 @@ export const userData = [{
   name: 'Theresa T. Brose',
   avatar: avatar2,
   languages: ['English', 'German', 'Spanish'],
-  email: 'sinikkapenttinen@dayrep.com',
+  email: 'Pending Rent : August,September',
   contact: '+231 47-23456789',
   status: 'Active',
   mutualCount: 856,
@@ -58,7 +59,7 @@ export const userData = [{
   name: 'James L. Erickson',
   avatar: avatar3,
   languages: ['English', 'German', 'Spanish'],
-  email: 'jerepalmu@rhyta.com',
+  email: 'Pending Rent : August,September',
   contact: '+231 73-34567890',
   status: 'Inactive',
   mutualCount: 52,
@@ -73,7 +74,7 @@ export const userData = [{
   name: 'Lily W. Wilson',
   avatar: avatar4,
   languages: ['English', 'German', 'Spanish'],
-  email: 'ullanuorela@rhyta.com',
+  email: 'Pending Rent : August,September',
   contact: '+231 45-45678901',
   status: 'Active',
   time: addOrSubtractMinutesFromDate(100),
@@ -89,7 +90,7 @@ export const userData = [{
   name: 'Sarah M. Brooks',
   avatar: avatar5,
   languages: ['English', 'German', 'Spanish'],
-  email: 'tiiakarppinen@teleworm.us',
+  email: 'Pending Rent : August,September',
   contact: '+231 16-56789012',
   status: 'Inactive',
   mutualCount: 548,
@@ -104,7 +105,7 @@ export const userData = [{
   name: 'Joe K. Hall',
   avatar: avatar6,
   languages: ['English', 'German', 'Spanish'],
-  email: 'harlandrorsini@dayrep.com',
+  email: 'Pending Rent : August,September',
   contact: '+231 82-67890123',
   status: 'Active',
   mutualCount: 0,
@@ -119,7 +120,7 @@ export const userData = [{
   name: 'Robert V. Leavitt',
   avatar: avatar7,
   languages: ['English', 'German', 'Spanish'],
-  email: 'robertvleavitt@dayrep.com',
+  email: 'Pending Rent : August,September',
   contact: '+787 361-318-4753',
   status: 'Active',
   mutualCount: 856,
@@ -136,7 +137,7 @@ export const userData = [{
   name: 'Lydia Anderson',
   avatar: avatar8,
   languages: ['English', 'German', 'Spanish'],
-  email: 'lydiajanderson@dayrep.com',
+  email: 'Pending Rent : August,September',
   contact: '+787 602-851-1066',
   message: 'Whats going on?',
   status: 'Inactive',
@@ -151,7 +152,7 @@ export const userData = [{
   name: 'Sarah Martinez',
   avatar: avatar9,
   languages: ['English', 'German', 'Spanish'],
-  email: 'sarahjmartinez@rhyta.com',
+  email: 'Pending Rent : August,September',
   contact: '+231 45-45678901',
   status: 'Active',
   time: addOrSubtractMinutesFromDate(350),
@@ -363,8 +364,8 @@ export const propertyData = [{
   price: '60,691',
   propertyType: 'Villas',
   country: 'Bermuda',
-  type: 'Sold',
-  variant: 'danger'
+  type: 'Rent',
+  variant: 'success'
 }, {
   id: '103',
   name: 'Tungis Luxury',
@@ -378,8 +379,8 @@ export const propertyData = [{
   price: '70,245',
   propertyType: 'Bungalow',
   country: 'Australia',
-  type: 'Sale',
-  variant: 'warning',
+  type: 'Rent',
+  variant: 'success',
   save: true
 }, {
   id: '104',
@@ -410,8 +411,8 @@ export const propertyData = [{
   price: '90,674',
   propertyType: 'Villas',
   country: 'U.S.A',
-  type: 'Sale',
-  variant: 'warning',
+  type: 'Rent',
+  variant: 'success',
   save: false
 }, {
   id: '106',
@@ -442,8 +443,8 @@ export const propertyData = [{
   price: '75,341',
   propertyType: 'Apartment',
   country: 'France',
-  type: 'Sold',
-  variant: 'danger'
+  type: 'Rent',
+  variant: 'success'
 }, {
   id: '108',
   name: 'Luxury Bungalow Villas',
@@ -457,8 +458,8 @@ export const propertyData = [{
   price: '54,230',
   propertyType: 'Bungalow',
   country: 'France',
-  type: 'Sale',
-  variant: 'warning',
+  type: 'Rent',
+  variant: 'success',
   save: false
 }, {
   id: '109',
@@ -489,7 +490,7 @@ export const propertyData = [{
   price: '34,341',
   propertyType: 'Apartment',
   country: 'U.S.A',
-  type: 'Sold',
+  type: 'Rent',
   variant: 'success'
 }];
 export const agentData = [{
@@ -724,23 +725,26 @@ export const customerReviewsData = [{
   }
 }];
 export const timelineData = {
-  Today: [{
-    title: 'Completed UX design project for our client',
-    description: 'Dolorum provident rerum aut hic quasi placeat iure tempora laudantium ipsa ad debitis unde?',
+  Comments: [{
+    title: 'Joe D.| 19 August 2025| 20:46',
+    description: ' A customer from Muscat submitted an inquiry for Al Mouj Seaside Apartment Assign to team?.',
     important: true
   }, {
-    title: 'Yes! We are celebrating our first admin release.',
-    description: 'Consectetur adipisicing elit. Iusto, optio, dolorum John deon provident.'
+    title: 'Marketing Dept. Admin | 19 Aug 25 | 20:46',
+    description: 'Your Google Ads – Muscat Luxury Rentals campaign reached 75% of today’s limit.'
   }, {
-    title: 'We released new version of our theme Rasket.',
-    description: '3 new photo Uploaded on facebook fan page'
+    title: 'Arshad K. | 19 Aug 25 | 20:46',
+    description: 'Lead #OM-2374 reopened the Azaiba Villas brochure twice in the past hour.'
   }],
   Yesterday: [{
-    title: 'We have archieved 25k sales in our themes',
-    description: 'Dolorum provident rerum aut hic quasi placeat iure tempora laudantium ipsa ad debitis unde?'
+    
+     title: 'Ali Shaikh | 19 Aug 25 | 20:46',
+    description: 'Only 1 townhouse remaining in Madinat Al Irfan Phase 2. Consider boosting visibility.'
+
   }, {
-    title: 'Yes! We are celebrating our first admin release.',
-    description: 'Outdoor visit at California State Route 85 with John Boltana & Harry Piterson.'
+    
+    title: 'Marketing Dept. Admin | 19 Aug 25 | 20:46',
+    description: 'Qurum Heights Residence gained 95 new views today across digital channels.'
   }]
   // '5 days ago': [
   //   {

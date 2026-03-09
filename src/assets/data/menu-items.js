@@ -15,12 +15,18 @@ export const MENU_ITEMS = [{
   label: 'Add Leads',
   icon: 'ri:community-line',
   url: '/add leads'
-}, 
+},
+
+
  {
   key: 'Landlord',
   label: 'Landlord',
   icon: 'ri:contacts-book-3-line',
-  children: [{
+   url: '/agentDashboard', 
+  children: [
+    
+   
+   {
     key: 'Add-Property',
     label: 'Add Property',
     url: '/landlord/add-property',
@@ -63,13 +69,13 @@ export const MENU_ITEMS = [{
     parentKey: 'Reports'
   }, {
     key: 'Landlord-report',
-    label: 'landlord-report',
+    label: 'Landlord-Report',
     url: '/Landlord-report/calendar',
     parentKey: 'Reports'
   }, {
     key: 'property-report',
     label: 'Property Report',
-    url: '/property report/invoice',
+    url: '/Property-report',
     parentKey: 'Reports'
   },  ]
 },  ];

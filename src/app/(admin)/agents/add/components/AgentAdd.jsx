@@ -104,13 +104,13 @@ const Addlead = () => {
             </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <label htmlFor="choices-country" className="form-label">
+                <label htmlFor="choices-country" className="form-label" >
                   Country
                 </label>
                 <ChoicesFormInput className="form-control" id="choices-country" data-choices data-choices-groups data-placeholder="Select Country">
                   <option>Choose a country</option>
                   <optgroup>
-                    <option>United Kingdom</option>
+                    <option>Oman</option>
                     <option value="Fran">France</option>
                     <option value="Netherlands">Netherlands</option>
                     <option value="U.S.A">U.S.A</option>
@@ -146,15 +146,22 @@ const Addlead = () => {
       <div className="mb-3 rounded">
         <Row className="justify-content-end g-2">
           <Col lg={2}>
-            <Button type="submit" variant="outline-primary" className="w-100">
+            <Button type="submit" variant="" className="w-100">
               Create Agent
             </Button>
           </Col>
-          <Col lg={2}>
-            <Button variant="danger" className="w-100">
-              Cancel
-            </Button>
-          </Col>
+          <Button
+                      style={{
+                        backgroundColor: '#3b4b7d',
+                        borderColor: '#3b4b7d',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        padding: '0.5rem 1.25rem',
+                        color: 'white'
+                      }}
+                    >
+                      Cancel
+                    </Button>
         </Row>
       </div>
     </form>;

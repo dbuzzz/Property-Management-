@@ -3,7 +3,7 @@ import SocialSource from './components/SocialSource';
 import Statistics from './components/Statistics';
 const AnalyticsPage = () => {
   return <>
-      <PageTitle title="" />
+      <PageTitle title="Dashboards" />
       <Statistics />
       
       <SocialSource />

@@ -44,8 +44,8 @@ const PropertiesChart = () => {
       }
     }]
   };
-  return <Col xl={6} lg={12}>
-      <Card>
+  return <Col xl={6} lg={10} md={12}>
+      <Card >
         <CardBody>
           <Row className="align-items-center">
             <Col lg={7}>
@@ -95,7 +95,7 @@ const PropertiesChart = () => {
 };
 const DevelopmentTask = () => {
   return <Col xl={3} lg={6}>
-      <Card>
+      <Card style={{height: '92%'}}>
         <CardHeader className="d-flex align-items-center border-bottom border-dashed">
           <CardTitle as={'h4'} className="mb-0">
             Development Task
@@ -199,7 +199,7 @@ const SealProperties = () => {
     }
   };
   return <Col xl={3} lg={6}>
-      <Card className="bg-primary bg-gradient">
+      <Card className="bg-primary bg-gradient" style={{height: '92%'}}>
         <CardBody>
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div>

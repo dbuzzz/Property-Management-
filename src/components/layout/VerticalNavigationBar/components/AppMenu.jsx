@@ -3,7 +3,10 @@ import { findAllParent, findMenuItem, getMenuItemFromURL } from '@/helpers/Manu'
 import clsx from 'clsx';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Collapse } from 'react-bootstrap';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate} from 'react-router-dom';
+
+
+
 const MenuItemWithChildren = ({
   item,
   className,
@@ -12,17 +15,34 @@ const MenuItemWithChildren = ({
   activeMenuItems,
   toggleMenu
 }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(activeMenuItems.includes(item.key));
   useEffect(() => {
     setOpen(activeMenuItems.includes(item.key));
   }, [activeMenuItems, item]);
+  // const toggleMenuItem = e => {
+  //   e.preventDefault();
+  //   const status = !open;
+  //   setOpen(status);
+  //   if (toggleMenu) toggleMenu(item, status);
+  //   return false;
+  // };
   const toggleMenuItem = e => {
-    e.preventDefault();
-    const status = !open;
-    setOpen(status);
-    if (toggleMenu) toggleMenu(item, status);
-    return false;
-  };
+  e.preventDefault();
+
+  // 1️⃣ Parent click → navigate
+  if (item.url) {
+    navigate(item.url);
+  }
+
+  // 2️⃣ Submenu toggle
+  const status = !open;
+  setOpen(status);
+
+  if (toggleMenu) toggleMenu(item, status);
+  return false;
+};
+
   const getActiveClass = useCallback(item => {
     return activeMenuItems?.includes(item.key) ? 'active' : '';
   }, [activeMenuItems]);

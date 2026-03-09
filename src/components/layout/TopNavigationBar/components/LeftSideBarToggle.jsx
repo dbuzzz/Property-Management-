@@ -49,7 +49,7 @@ const LeftSideBarToggle = () => {
   const isFirstRender = useRef(true);
 
   const handleMenuSize = () => {
-    // ❌ sidebar ko condensed ya hidden hone se roko
+
     if (size !== 'default') {
       changeMenuSize('default');
     }

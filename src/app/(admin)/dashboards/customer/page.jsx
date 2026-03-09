@@ -9,7 +9,7 @@ import PurchaseProperty from './components/PurchaseProperty';
 import TopCustomer from './components/TopCustomer';
 const CustomerPage = () => {
   return <>
-      <PageTitle title="" subName="" />
+      <PageTitle title="Add Leads" subName="" />
       <Row>
         <Col xl={8} lg={12}>
           <CustomerCountry />

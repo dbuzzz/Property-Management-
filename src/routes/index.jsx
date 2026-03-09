@@ -3,13 +3,20 @@ import React from 'react'
 import { lazy } from 'react';
 const Dashboard = lazy(() => import('../app/(admin)/dashboards/analytics/page.jsx'));
 const PropertyAddPage = lazy(() => import('../app/(admin)/property/add/page.jsx'));
+// const Assignmentproperty = lazy(() => import('../app/(admin)/assignmentproperty/Save/page.jsx'));
+const Assignmentproperty = lazy(() => import('../app/(admin)/AssignmentProperty/Save/page.jsx'));
 const PropertyGridPage = lazy(() => import('../app/(admin)/property/grid/page.jsx'));
+const Propertydetailspage =lazy(() => import('../app/(admin)/property/details/page.jsx'));
 const ChatPage = lazy(() => import('../app/(admin)/messages/page.jsx'));
 const ListViewPage = lazy(() => import('../app/(admin)/agents/list-view1/components/page.jsx'));
+
 const CustomerAddPage = lazy(() => import('../app/(admin)/customers/add/page.jsx'));
 const ListViewPage1 = lazy(() => import('../app/(admin)/agents/list-view/components/page.jsx'));
 const GridViewPage = lazy(() => import('../app/(admin)/agents/grid-view/page.jsx'));
-const Homepage = React.lazy(() => import('../components/homepage.jsx'));
+// const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/components/page.jsx'));
+const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/page.jsx'));
+const CustomersDetails = lazy(()  => import('../app/(admin)/customers/details/page.jsx'));
+
 const Navigate = React.lazy(() => import('react-router-dom').then(module => ({ default: module.Navigate })));
 const AuthSignIn = lazy(() => import('@/app/(other)/auth/sign-in/page'));
 const AuthSignUp = lazy(() => import('@/app/(other)/auth/sign-up/page'));
@@ -18,9 +25,15 @@ const LockScreen = lazy(() => import('@/app/(other)/auth/lock-screen/page'));
 const ComingSoon = lazy(() => import('@/app/(other)/coming-soon/page'));
 const Maintenance = lazy(() => import('@/app/(other)/maintenance/page'));
 const Error404 = lazy(() => import('@/app/(other)/(error-pages)/404-error/page'));
-const TenantReport = lazy(() => import('../app/(admin)/Report/Tenants Report/Components/Tenants report.jsx'));
-const Landlord = lazy(() => import('../app/(admin)/landlord/landlord1.jsx'));
+const Report = lazy(() => import('../app/(admin)/Report/Tenant Report/components/page.jsx'));
+const Report1 = lazy(() => import('../app/(admin)/Report1/componets/page.jsx'));
+const Report2 = lazy(() => import('../app/(admin)/Report2/components/page.jsx'));
 const Comment = lazy(() => import('../app/(admin)/Comment/Comment.jsx'));
+// const Assignproperty = lazy(() => import('../app/(admin)/Assignproperty/Assignproperty.jsx'));
+const AgentPage = lazy(() => import('../app/(admin)/agent/page.jsx'));
+ const ProfileSettingPage = lazy(() => import('../components/layout/TopNavigationBar/components/ProfileSettingPage.jsx'));
+
+// const Report = lazy(() => import('../app/(admin)/Report/Tenant Report/components/page.jsx'));
 const initialRoutes = [{
   path: '/',
   name: 'root',
@@ -38,10 +51,12 @@ const routes = [{
   element: <CustomerAddPage />
 },
 {
-  path: '/landlord1',
-  name: 'landlord Dashboard',
-  element: <Landlord/>
+  path: '/agentDashboard',
+  name: ' AgentPage',
+  element: <AgentPage/>
 },
+
+
 {
   path: '/landlord/add-property',
   name: 'Add Property',
@@ -54,11 +69,27 @@ const routes = [{
   element: <PropertyGridPage />
 },
 {
+  path: '/landlord/detailspage',
+  name: 'Property details',
+  element: <Propertydetailspage />
+},
+
+{
   path: '/landlord-list',
   name: 'landlord List',
   element: <ListViewPage1 />
 },
+{
+  path: '/comment',
+  name: 'Comment',
+  element: <Comment />
+},
 
+{
+  path: '/Agent-Details',
+  name: 'Agents details',
+  element: <Agentsdetailspage />
+},
 
 {
   path: '/Tenants',
@@ -69,24 +100,50 @@ const routes = [{
   path: '/list',
   name: 'tenants  List View',
   element: <ListViewPage />
+
+},
+{
+  path: '/Assignment-property',
+  name: 'Assignment-Property',
+  element: <Assignmentproperty/>
 },
 {
   path: '/messages',
   name: 'Messages',
   element: <ChatPage />
 },
+{
+  path: '/profile-setting',
+  name: 'Profile Setting',
+  element: <ProfileSettingPage />
+},
 
 
 
 {
   path: '/Tenants-report',
-  name: 'Tenants  Report',
-  element: <TenantReport />
+  name: 'Tenant  Report',
+  element: <Report />
 },
 {
-  name: 'Comment',
-  path: '/comments',
-  element: <Comment />
+  path: '/Landlord-report/calendar',
+  name: 'Landlord  Report',
+  element: <Report1 />
+},
+{
+  path: '/Property-report',
+  name: 'Property  Report',
+  element: <Report2 />
+},
+{
+  path: '/landlord-list',
+  name: 'landlord List',
+  element: <ListViewPage1 />
+},
+{
+  name: 'CustomersDetails',
+  path: '/Customers-Details',
+  element: <CustomersDetails/>
 },
 
 
@@ -129,14 +186,3 @@ export const appRoutes = [...initialRoutes, ...routes, authRoutes];
 
 
 
-//  {
-//   key: 'Tenants',
-//   label: 'Tenants',
-//   url : '/tenants',
-//   icon: 'ri:news-line',
-//   children: [{
-//     key: 'Tenants-list',
-//     label: 'Tenants List',
-//     url: '/list',
-//     parentKey: 'Tenants'
-//   },]

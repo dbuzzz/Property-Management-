@@ -73,7 +73,7 @@ const PropertyList = () => {
                     <td>Residences</td>
                     <td>
                       {' '}
-                      <span className={`badge bg-${item.type == 'Rent' ? 'success' : item.type == 'Sold' ? 'danger' : 'warning'}-subtle text-${item.type == 'Rent' ? 'success' : item.type == 'Sold' ? 'danger' : 'warning'} py-1 px-2 fs-13`}>
+                      <span className={`badge bg-${item.type == 'Rent' ? 'success' : item.type == '' ? 'danger' : 'warning'}-subtle text-${item.type == 'Rent' ? 'success' : item.type == 'rent' ? 'danger' : 'warning'} py-1 px-2 fs-13`}>
                         {item.type}
                       </span>
                     </td>

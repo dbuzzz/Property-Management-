@@ -5,7 +5,7 @@ import PropertyAdd from './components/PropertyAdd';
 import PropertyAddCard from './components/PropertyAddCard';
 const PropertyAddPage = () => {
   return <>
-      <PageTitle title="" subName="" />
+      <PageTitle title="Add Property" subName="" />
       <Row>
         <PropertyAddCard />
         <Col xl={9} lg={8}>

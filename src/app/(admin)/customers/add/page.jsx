@@ -5,7 +5,7 @@ import AddCustomer from './components/AddCustomer';
 import CustomerAddCard from './components/CustomerAddCard';
 const CustomerAddPage = () => {
   return <>
-      <PageTitle title="" subName="" />
+      <PageTitle title="Add Leads" subName="" />
       <Row>
         <CustomerAddCard />
         <Col xl={9} lg={12}>

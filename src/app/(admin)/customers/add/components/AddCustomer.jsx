@@ -10,12 +10,29 @@ import { useEffect } from 'react';
 import Choices from 'choices.js';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import 'choices.js/public/assets/styles/choices.min.css';
 
 
 import * as yup from 'yup';
 const Addlead = () => {
   
   const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState({ code: 'OM', name: 'Oman' });
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  
+  const countries = [
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'FR', name: 'France' },
+    { code: 'NL', name: 'Netherlands' },
+    { code: 'US', name: 'U.S.A' },
+    { code: 'DK', name: 'Denmark' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'AU', name: 'Australia' },
+    { code: 'IN', name: 'India' },
+    { code: 'OM', name: 'Oman' },
+    { code: 'ES', name: 'Spain' },
+    { code: 'AE', name: 'United Arab Emirates' }
+  ];
   
   
 
@@ -43,6 +60,95 @@ const [leadSubType, setLeadSubType] = useState('');
   } = useForm({
     resolver: yupResolver(messageSchema)
   });
+  
+  // Add CSS for dropdown spacing and emoji rendering
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .choices__list--dropdown .choices__item {
+        padding-left: 16px !important;
+      }
+      .choices__list--dropdown {
+        padding-left: 8px !important;
+      }
+      .choices__list--dropdown .choices__item,
+      .choices__inner,
+      select.form-control {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif !important;
+      }
+      
+      .custom-country-dropdown {
+        position: relative;
+      }
+      
+      .country-select-box {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .country-select-box:hover {
+        border-color: #86b7fe;
+      }
+      
+      .country-dropdown-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin-top: 4px;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      
+      .country-dropdown-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s;
+      }
+      
+      .country-dropdown-item:hover {
+        background: #f8f9fa;
+      }
+      
+      .country-flag {
+        width: 24px;
+        height: 18px;
+        display: inline-block;
+        border-radius: 2px;
+        object-fit: cover;
+      }
+      
+      .country-name {
+        font-size: 14px;
+        color: #333;
+      }
+      
+      .dropdown-arrow {
+        font-size: 12px;
+        color: #666;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  
   return <form onSubmit={handleSubmit(() => {})}>
     
       <Card>
@@ -53,72 +159,72 @@ const [leadSubType, setLeadSubType] = useState('');
           <Row>
             <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="First name" placeholder="Enter you first name" label="First Name" />
+                <TextFormInput control={control} name="First name" placeholder="Enter You first name" label="First Name"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
             <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="last name" placeholder="Enter you last name" label="Last Name" />
+                <TextFormInput control={control} name="last name" placeholder="Enter you last name" label="Last Name"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
                         {/* ✅ CONTACT NUMBER WITH COUNTRY CODE */}
-            <Col lg={6}>
-              <div className="mb-3">
-                <label className="form-label">Contact Number</label>
-                <PhoneInput
-                  country={'in'}
-                  value={phone}
-                  onChange={setPhone}
-                  inputStyle={{ width: '100%' }}
-                />
-              </div>
-            </Col>
+          <Col lg={6}>
+  <div className="mb-3">
+    <label className="form-label">Contact Number</label>
 
-           
-            <Col lg={6}>
-              <div className="mb-3">
-                <TextFormInput control={control} name="number" placeholder="Contact Number" label="Contact Number" />
-              </div>
-            </Col>
+    <PhoneInput
+      country="om"
+      value={phone}
+      onChange={setPhone}
+      inputStyle={{
+        width: '100%',
+        backgroundColor: '#F9F9FC'
+      }}
+    />
+  </div>
+</Col>
+
              <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="viewProperties"  placeholder="Enter Nationality" label="Nationality" />
+                <TextFormInput control={control} name="viewProperties"  placeholder="Enter Nationality" label="Nationality"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
           
              <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Passport id" placeholder="Enter Detail" label="Passport ID/ Number" />
+                <TextFormInput control={control} name="Passport id" placeholder="Enter Detail" label="Passport ID/ Number"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
-            {/* <Col lg={6}>
-              <div className="mb-3">
-                <label htmlFor="choices-country" className="form-label">
-                  Lead types 
-                </label>
-                
-                <ChoicesFormInput className="form-control" id="choices-country" placeholder="landlord/tenant" >
-                  <option>Add lead type</option>
-                  <optgroup>
-                    <option>Family</option>
-                    <option value="Fran">Company Staff</option>
-                    <option value="Netherlands">Labour</option>
-                    <option value="U.S.A">Bachelor</option>
-                    
-                  </optgroup>
-                </ChoicesFormInput>
-              </div>
-            </Col>
-            */}
-            {/* ================= LEAD TYPE ================= */}
-{/* ================= LEAD TYPE ================= */}
-{/* ================= LEAD TYPE ================= */}
+           
 <Col lg={6}>
-  <div className="mb-3">
-    <label className="form-label">Lead Types</label>
+  <div className="mb-2">
+    
+    <label className="form-label" style ={{ backgroundColor: '#F9F9FC' }}>Lead Types</label>
 
     <select
-      className="form-control"
+      className="form-control lead-select"
+      style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }}
+      
       value={leadValue}
       onChange={(e) => {
         const value = e.target.value;
@@ -126,17 +232,14 @@ const [leadSubType, setLeadSubType] = useState('');
         if (value === 'tenant') {
           setStep('tenant');
           setLeadValue('');
-        } 
-        else if (value === 'landlord') {
+        } else if (value === 'landlord') {
           setStep('landlord');
           setLeadValue('');
-        } 
-        else {
+        } else {
           setLeadValue(value);
         }
       }}
     >
-      {/* STEP 1 */}
       {step === 'main' && (
         <>
           <option value="">Select Lead Type</option>
@@ -145,7 +248,6 @@ const [leadSubType, setLeadSubType] = useState('');
         </>
       )}
 
-      {/* STEP 2 - TENANT */}
       {step === 'tenant' && (
         <>
           <option value="">Select Tenant Type</option>
@@ -156,7 +258,6 @@ const [leadSubType, setLeadSubType] = useState('');
         </>
       )}
 
-      {/* STEP 2 - LANDLORD */}
       {step === 'landlord' && (
         <>
           <option value="">Select Landlord Type</option>
@@ -167,75 +268,68 @@ const [leadSubType, setLeadSubType] = useState('');
     </select>
   </div>
 </Col>
-
-
-
-
-
-
-
-
             <Col lg={12}>
               <div className="mb-3">
-                <TextAreaFormInput control={control} name="description" type="text" label="Lead  Address" className="Lead -address" id="schedule-textarea" rows={3} placeholder="Address" />
+                <TextAreaFormInput control={control} name="description" type="text" label="Lead  Address" className="Lead -address" id="schedule-textarea" rows={3} placeholder="Address"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="PO BOX"  placeholder="PO BOX" label="PO BOX" />
+                <TextFormInput control={control} name="PO BOX"  placeholder="PO BOX" label="PO BOX" style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }}/>
               </div>
             </Col>
              <Col lg={4}>
   <div className="mb-3">
-    <label htmlFor="choices-country" className="form-label">
+    <label htmlFor="choices-country" className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>
       Country
     </label>
 
-    <ChoicesFormInput
-      className="form-control"
-      id="choices-country"
-      data-choices
-      data-choices-groups
-      data-placeholder="Select Country"
-    >
-      <option value="">Choose a country</option>
-
-      <optgroup label="Countries">
-        <option value="GB" data-custom-properties='{"flag":"🇬🇧"}'>
-          United Kingdom
-        </option>
-        <option value="FR" data-custom-properties='{"flag":"🇫🇷"}'>
-          France
-        </option>
-        <option value="NL" data-custom-properties='{"flag":"🇳🇱"}'>
-          Netherlands
-        </option>
-        <option value="US" data-custom-properties='{"flag":"🇺🇸"}'>
-          U.S.A
-        </option>
-        <option value="DK" data-custom-properties='{"flag":"🇩🇰"}'>
-          Denmark
-        </option>
-        <option value="CA" data-custom-properties='{"flag":"🇨🇦"}'>
-          Canada
-        </option>
-        <option value="AU" data-custom-properties='{"flag":"🇦🇺"}'>
-          Australia
-        </option>
-        <option value="IN" data-custom-properties='{"flag":"🇮🇳"}'>
-          India
-        </option>
-        <option value="DE" data-custom-properties='{"flag":"🇩🇪"}'>
-          Oman
-        </option>
-        <option value="ES" data-custom-properties='{"flag":"🇪🇸"}'>
-          Spain
-        </option>
-        <option value="AE" data-custom-properties='{"flag":"🇦🇪"}'>
-          United Arab Emirates
-        </option>
-      </optgroup>
-    </ChoicesFormInput>
+    <div className="custom-country-dropdown">
+      <div 
+        className="country-select-box" style ={{ backgroundColor: '#F9F9FC' }}
+        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: '#F9F9FC' }}>
+          <img 
+            src={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png`}
+            alt={selectedCountry.name}
+            className="country-flag"
+          />
+          <span className="country-name">{selectedCountry.name}</span>
+        </div>
+        <span className="dropdown-arrow">▼</span>
+      </div>
+      
+      {showCountryDropdown && (
+        <div className="country-dropdown-list">
+          {countries.map((country) => (
+            <div
+              key={country.code}
+              className="country-dropdown-item"
+              onClick={() => {
+                setSelectedCountry(country);
+                setShowCountryDropdown(false);
+              }}
+            >
+              <img 
+                src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                alt={country.name}
+                className="country-flag"
+              />
+              <span className="country-name">{country.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   </div>
 </Col>
 
@@ -244,7 +338,11 @@ const [leadSubType, setLeadSubType] = useState('');
                 <label htmlFor="choices-city" className="form-label">
                   City
                 </label>
-                <ChoicesFormInput className="form-control" id="choices-city" data-placeholder=" City">
+                <ChoicesFormInput className="form-control" id="choices-city" data-placeholder=" City"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }}>
                 <option value="">Choose a City</option>
                   <optgroup label="UK">
                     <option value="London">London</option>
@@ -282,23 +380,57 @@ const [leadSubType, setLeadSubType] = useState('');
               </div>
             </Col>
            
-            <Col lg={4}>
-                          <label className="form-label">Lead Origin</label>
-                          <ChoicesFormInput className="form-control">
-                            <option>Lead-Origin</option>
-                            <option></option>
-                            <option></option>
-                            <option></option>
-                          </ChoicesFormInput>
-                        </Col>
+       <Col lg={4}>
+  <label className="form-label mb-1"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          
+        }}>Lead Origin</label>
+  
+  {/* Add style tag */}
+  
+  
+  <ChoicesFormInput
+    className="form-control lead-origin-dropdown"
+    style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }}
+  >
+    <option>Lead-Origin</option>
+    <option>Open Sooq</option>
+    <option>OLX</option>
+    <option>Employee Referral</option>
+    <option>Reference</option>
+    <option>Website Inquiry</option>
+    <option>Social Media</option>
+    <option>Walk-in Customer</option>
+    <option>Phone Call Inquiry</option>
+    <option>Office Visit</option>
+    <option>Online Property Portal</option>
+    <option>Printing Banner</option>
+  </ChoicesFormInput>
+</Col>
+
+
+
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Created At" placeholder="Time-Lapse" label="Created At" />
+                <TextFormInput control={control} name="Created At" placeholder="Time-Lapse" label="Created At" style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }}/>
               </div>
             </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Updated At" placeholder="Time-Lapse" label="Updated At" />
+                <TextFormInput control={control} name="Updated At" placeholder="Time-Lapse" label="Updated At"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
             <Col lg={4}>
@@ -312,12 +444,20 @@ const [leadSubType, setLeadSubType] = useState('');
                         </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Assigned to" placeholder="Lead Assigned To" label="Lead Assigned To" />
+                <TextFormInput control={control} name="Assigned to" placeholder="Lead Assigned To" label="Lead Assigned To"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
              <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Comments" placeholder="Enter Comments" label=" Comments" />
+                <TextFormInput control={control} name="Comments" placeholder="Enter Comments" label=" Comments"style={{
+          backgroundColor: '#F9F9FC',
+          fontWeight: '600',
+          border: '1.5px solid #c6c6c6'
+        }} />
               </div>
             </Col>
             
@@ -332,10 +472,13 @@ const [leadSubType, setLeadSubType] = useState('');
             </Button>
           </Col>
           <Col lg={2}>
-            <Button variant="primary
-            " className="w-100">
-              Cancel
-            </Button>
+            <Button 
+  variant="primary" 
+  className="w-100"
+  style={{ backgroundColor: '#5D7186', borderColor: '#5D7186' }}
+>
+  Cancel
+</Button>
           </Col>
         </Row>
       </div>

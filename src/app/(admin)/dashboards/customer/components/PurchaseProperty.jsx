@@ -14,7 +14,7 @@ const PurchaseProperty = () => {
           <div className="position-relative">
             <img src={propertiesImg} alt="properties" className="img-fluid rounded-top" />
             <span className="position-absolute top-0 end-0 p-1">
-              <span className="badge bg-danger text-white fs-13">Sold</span>
+              <span className="badge bg-danger text-white fs-13"></span>
             </span>
           </div>
           <div className="d-flex align-items-center gap-2 mt-3 pt-1 ">

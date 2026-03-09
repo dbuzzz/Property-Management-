@@ -4,7 +4,7 @@ import { Card, CardHeader, Col, Row } from 'react-bootstrap';
 import AgentList from './AgentList';
 const ListViewPage = () => {
   return <>
-      <PageTitle  title="" />
+      <PageTitle  title="Landlord List" />
       <Row>
         <Col lg={12}>
           <Card>
@@ -27,18 +27,37 @@ const ListViewPage = () => {
                     </Col>
                   </Row>
                 </Col>
-                <Col lg={6}>
-                  <div className="text-md-end mt-3 mt-md-0">
-                    <button type="button" className="btn btn-outline-primary me-2">
-                      <IconifyIcon icon="ri:settings-2-line" className="me-1" />
-                      More Setting
-                    </button>
-                    <button type="button" className="btn btn-outline-primary me-2">
-                      <IconifyIcon icon="ri:filter-line" className="me-1" /> Filters
-                    </button>
-                    
-                  </div>
-                </Col>
+     <Col lg={6}>
+  <div className="text-md-end mt-3 mt-md-0">
+    <button 
+      type="button" 
+      className="btn btn-outline-primary me-2"
+      style={{
+        '--bs-btn-hover-bg': '#5D7186',
+        '--bs-btn-hover-border-color': '#5D7186',
+        '--bs-btn-hover-color': '#fff',
+        minWidth: '150px'  // ✅ Equal width
+      }}
+    >
+      <IconifyIcon icon="ri:settings-2-line" className="me-1" />
+      More Setting
+    </button>
+    
+    <button 
+      type="button" 
+      className="btn btn-outline-primary me-2"
+      style={{
+        '--bs-btn-hover-bg': '#5D7186',
+        '--bs-btn-hover-border-color': '#5D7186',
+        '--bs-btn-hover-color': '#fff',
+        minWidth: '150px'  // ✅ Equal width
+      }}
+    >
+      <IconifyIcon icon="ri:filter-line" className="me-1" /> 
+      Filters
+    </button>
+  </div>
+</Col>
               </Row>
             </CardHeader>
           </Card>

@@ -3,7 +3,9 @@ import { getAllProperty } from '@/helpers/data';
 import { useFetchData } from '@/hooks/useFetchData';
 import { Card, CardBody, CardFooter, Col, Row } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 const PropertiesCard = ({
+  
   bath,
   beds,
   flor,
@@ -17,21 +19,14 @@ const PropertiesCard = ({
   save,
   image
 }) => {
-  return <Card className="overflow-hidden">
+  const navigate = useNavigate();
+  return <Card onClick={() => navigate("/landlord/detailspage")}
+      style={{ cursor: "pointer" }}
+  className="overflow-hidden">
       <div className="position-relative">
         <img src={image} alt="properties" className="img-fluid rounded-top" />
         <span className="position-absolute top-0 start-0 p-1">
-          {save ? <button type="button" className="btn btn-warning avatar-sm d-inline-flex align-items-center justify-content-center fs-20 rounded text-light ">
-              {' '}
-              <span>
-                {' '}
-                <IconifyIcon icon="solar:bookmark-broken" />
-              </span>
-            </button> : <button type="button" className="btn bg-warning-subtle avatar-sm d-inline-flex align-items-center justify-content-center fs-20 rounded text-warning">
-              <span>
-                <IconifyIcon icon="solar:bookmark-broken" />
-              </span>
-            </button>}
+          
         </span>
         <span className="position-absolute top-0 end-0 p-1">
           <span className={`badge bg-${variant} text-white fs-13`}>{type}</span>
@@ -50,46 +45,67 @@ const PropertiesCard = ({
           </div>
         </div>
         <Row className="mt-2 g-2">
-          <Col lg={4} xs={4}>
-            <span className="badge bg-light-subtle text-muted border fs-12">
-              <span className="fs-16">
-                <IconifyIcon icon="solar:bed-broken" className="align-middle" />
-              </span>
-              &nbsp;
-              {beds} Beds
-            </span>
-          </Col>
-          <Col lg={4} xs={4}>
-            <span className="badge bg-light-subtle text-muted border fs-12">
-              <span className="fs-16">
-                <IconifyIcon icon="solar:bath-broken" className="align-middle" />
-              </span>
-              &nbsp;
-              {bath} Bath
-            </span>
-          </Col>
-          <Col lg={4} xs={4}>
-            <span className="badge bg-light-subtle text-muted border fs-12">
-              <span className="fs-16">
-                <IconifyIcon icon="solar:scale-broken" className="align-middle" />
-              </span>
-              &nbsp;
-              {ft}ft
-            </span>
-          </Col>
-          <Col lg={4} xs={4}>
-            <span className="badge bg-light-subtle text-muted border fs-12">
-              <span className="fs-16">
-                <IconifyIcon icon="solar:double-alt-arrow-up-broken" className="align-middle" />
-              </span>
-              &nbsp;
-              {flor} Floor
-            </span>
-          </Col>
-        </Row>
+  <Col lg={3} xs={3}>
+    <span
+      className="badge bg-light-subtle text-muted border fs-12
+      d-flex align-items-center gap-1 w-100"
+      style={{ padding: '8px 6px' }}
+    >
+      <IconifyIcon
+        icon="solar:bed-broken"
+        className="fs-14 flex-shrink-0"
+      />
+      <span className="text-nowrap">{beds} Bed</span>
+    </span>
+  </Col>
+  <Col lg={3} xs={3}>
+    <span
+      className="badge bg-light-subtle text-muted border fs-12
+      d-flex align-items-center gap-1 w-100"
+      style={{ padding: '8px 6px' }}
+    >
+      <IconifyIcon
+        icon="solar:bath-broken"
+        className="fs-14 flex-shrink-0"
+      />
+      <span className="text-nowrap">{bath} Bath</span>
+    </span>
+  </Col>
+  <Col lg={3} xs={3}>
+    <span
+      className="badge bg-light-subtle text-muted border fs-12
+      d-flex align-items-center gap-1 w-100"
+      style={{ padding: '8px 6px' }}
+    >
+      <IconifyIcon
+        icon="solar:scale-broken"
+        className="fs-14 flex-shrink-0"
+      />
+      <span className="text-nowrap">{ft} ft</span>
+    </span>
+  </Col>
+  <Col lg={3} xs={3}>
+    <span
+      className="badge bg-light-subtle text-muted border fs-12
+      d-flex align-items-center gap-1 w-100"
+      style={{ padding: '8px 6px' }}
+    >
+      <IconifyIcon
+        icon="solar:double-alt-arrow-up-broken"
+        className="fs-14 flex-shrink-0"
+      />
+      <span className="text-nowrap">{flor} Floor</span>
+    </span>
+  </Col>
+</Row>
+<br></br>
+<p>
+  Landlord : Ali Shaikh | Tenant Assigned : Zara Hamilton
+
+</p>
       </CardBody>
       <CardFooter className="bg-light-subtle d-flex justify-content-between align-items-center border-top">
-        {type == 'Sold' ? <p className="fw-medium text-muted text-decoration-line-through fs-16 mb-0">${price}.00 </p> : <p className="fw-medium text-dark fs-16 mb-0">${price}.00 </p>}
+        {type == '' ? <p className="fw-medium text-muted text-decoration-line-through fs-16 mb-0">{}.00 </p> : <p className="fw-medium text-dark fs-16 mb-0">OMR {price}.00 </p>}
         <div>
           <Link to="" className="link-primary fw-medium">
             More Inquiry <IconifyIcon icon="ri:arrow-right-line" className="align-middle" />
