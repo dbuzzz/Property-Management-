@@ -383,8 +383,8 @@
 // };
 
 // export default ProfileSettingPage;
-import React, { useState } from 'react';
-
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 const countryCodes = [
   { code: "+968", short: "om", name: "Oman" },
   { code: "+91",  short: "in", name: "India" },
@@ -414,11 +414,37 @@ const ProfileSettingPage = () => {
   const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
   const [search, setSearch] = useState("");
   const [phone, setPhone] = useState("");
-
+const [data, setData] = useState([]);
+console.log("data",data);
   const filtered = countryCodes.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.code.includes(search)
   );
+
+ useEffect(() => {
+  const fetchManager = async () => {
+    try {
+      const res = await axios.get(
+        "https://alw.checkour.work/marketing/manager/get/",
+        {
+          params: {
+            manager_id: 69
+          },
+          headers: {
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2OSwicm9sZSI6Ik1hbmFnZXIiLCJkZXBhcnRtZW50IjoiTWFya2V0aW5nIiwiZXhwIjoxNzczMjUzMjA5LCJpYXQiOjE3NzMxNjY4MDksInRva2VuIjpudWxsfQ.HcnPmcq1TdunAM2KxOF_DCJXvsMikEbuubKWJTzbYhg"
+          }
+        }
+      );
+setData(res.data);
+      console.log("1234",res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  fetchManager();
+}, []);
 
   return (
     <>

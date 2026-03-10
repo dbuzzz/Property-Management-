@@ -6,7 +6,7 @@ const PropertyAddPage = lazy(() => import('../app/(admin)/property/add/page.jsx'
 // const Assignmentproperty = lazy(() => import('../app/(admin)/assignmentproperty/Save/page.jsx'));
 const Assignmentproperty = lazy(() => import('../app/(admin)/AssignmentProperty/Save/page.jsx'));
 const PropertyGridPage = lazy(() => import('../app/(admin)/property/grid/page.jsx'));
-const Propertydetailspage =lazy(() => import('../app/(admin)/property/details/page.jsx'));
+const Propertydetailspage = lazy(() => import('../app/(admin)/property/details/page.jsx'));
 const ChatPage = lazy(() => import('../app/(admin)/messages/page.jsx'));
 const ListViewPage = lazy(() => import('../app/(admin)/agents/list-view1/components/page.jsx'));
 
@@ -15,7 +15,7 @@ const ListViewPage1 = lazy(() => import('../app/(admin)/agents/list-view/compone
 const GridViewPage = lazy(() => import('../app/(admin)/agents/grid-view/page.jsx'));
 // const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/components/page.jsx'));
 const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/page.jsx'));
-const CustomersDetails = lazy(()  => import('../app/(admin)/customers/details/page.jsx'));
+const CustomersDetails = lazy(() => import('../app/(admin)/customers/details/page.jsx'));
 
 const Navigate = React.lazy(() => import('react-router-dom').then(module => ({ default: module.Navigate })));
 const AuthSignIn = lazy(() => import('@/app/(other)/auth/sign-in/page'));
@@ -31,7 +31,7 @@ const Report2 = lazy(() => import('../app/(admin)/Report2/components/page.jsx'))
 const Comment = lazy(() => import('../app/(admin)/Comment/Comment.jsx'));
 // const Assignproperty = lazy(() => import('../app/(admin)/Assignproperty/Assignproperty.jsx'));
 const AgentPage = lazy(() => import('../app/(admin)/agent/page.jsx'));
- const ProfileSettingPage = lazy(() => import('../components/layout/TopNavigationBar/components/ProfileSettingPage.jsx'));
+const ProfileSettingPage = lazy(() => import('../components/layout/TopNavigationBar/components/ProfileSettingPage.jsx'));
 
 // const Report = lazy(() => import('../app/(admin)/Report/Tenant Report/components/page.jsx'));
 const initialRoutes = [{
@@ -39,7 +39,7 @@ const initialRoutes = [{
   name: 'root',
   element: <Navigate to="/dashboards" />
 }];
-  
+
 const routes = [{
   path: '/dashboards',
   name: 'Analytics',
@@ -53,7 +53,7 @@ const routes = [{
 {
   path: '/agentDashboard',
   name: ' AgentPage',
-  element: <AgentPage/>
+  element: <AgentPage />
 },
 
 
@@ -105,7 +105,7 @@ const routes = [{
 {
   path: '/Assignment-property',
   name: 'Assignment-Property',
-  element: <Assignmentproperty/>
+  element: <Assignmentproperty />
 },
 {
   path: '/messages',
@@ -143,7 +143,7 @@ const routes = [{
 {
   name: 'CustomersDetails',
   path: '/Customers-Details',
-  element: <CustomersDetails/>
+  element: <CustomersDetails />
 },
 
 
