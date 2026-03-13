@@ -7,6 +7,7 @@ const PropertyAddPage = lazy(() => import('../app/(admin)/property/add/page.jsx'
 const Assignmentproperty = lazy(() => import('../app/(admin)/AssignmentProperty/Save/page.jsx'));
 const PropertyGridPage = lazy(() => import('../app/(admin)/property/grid/page.jsx'));
 const Propertydetailspage = lazy(() => import('../app/(admin)/property/details/page.jsx'));
+const PropertyEditPage = lazy(() => import('../app/(admin)/property/edit/page.jsx'));
 const ChatPage = lazy(() => import('../app/(admin)/messages/page.jsx'));
 const ListViewPage = lazy(() => import('../app/(admin)/agents/list-view1/components/page.jsx'));
 
@@ -16,6 +17,9 @@ const GridViewPage = lazy(() => import('../app/(admin)/agents/grid-view/page.jsx
 // const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/components/page.jsx'));
 const Agentsdetailspage = lazy(() => import('../app/(admin)/agents/details/page.jsx'));
 const CustomersDetails = lazy(() => import('../app/(admin)/customers/details/page.jsx'));
+const AllLeadsPage = lazy(() => import('../app/(admin)/leads/list/page.jsx'));
+const LeadPreviewPage = lazy(() => import('../app/(admin)/leads/preview/page.jsx'));
+const LeadEditPage = lazy(() => import('../app/(admin)/leads/edit/page.jsx'));
 
 const Navigate = React.lazy(() => import('react-router-dom').then(module => ({ default: module.Navigate })));
 const AuthSignIn = lazy(() => import('@/app/(other)/auth/sign-in/page'));
@@ -51,6 +55,21 @@ const routes = [{
   element: <CustomerAddPage />
 },
 {
+  path: '/all-leads',
+  name: 'All Leads',
+  element: <AllLeadsPage />
+},
+{
+  path: '/lead/preview',
+  name: 'Lead Preview',
+  element: <LeadPreviewPage />
+},
+{
+  path: '/lead/edit',
+  name: 'Update Lead',
+  element: <LeadEditPage />
+},
+{
   path: '/agentDashboard',
   name: ' AgentPage',
   element: <AgentPage />
@@ -72,6 +91,11 @@ const routes = [{
   path: '/landlord/detailspage',
   name: 'Property details',
   element: <Propertydetailspage />
+},
+{
+  path: '/property/edit',
+  name: 'Edit Property',
+  element: <PropertyEditPage />
 },
 
 {

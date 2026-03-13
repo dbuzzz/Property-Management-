@@ -7,7 +7,7 @@ import avatar from '@/assets/images/users/avatar-1.jpg';  // ✅ YE ADD KARO (ya
 
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { currency } from '@/context/constants';
-import { 
+import {
   Button, 
   Card, 
   CardBody, 
@@ -20,10 +20,78 @@ import {
   Carousel  // ✅ YE ADD KARO
 } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { useNavigate } from "react-router-dom";
-const PropertyDetails = () => {
-  
-  
+import { useMemo } from 'react';
+
+const formatDate = (val) => {
+  if (val == null || val === '') return '—';
+  const date = typeof val === 'string' ? new Date(val) : val;
+  if (Number.isNaN(date?.getTime())) return String(val);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const PropertyDetails = ({ property }) => {
+  const d = property || {};
+  const pd = d.propertyDetails || {};
+  const fd = d.flatData || {};
+  const vd = d.villaData || {};
+
+  const configuration = fd.flat_configuration || vd.villa_configuration || '';
+  const bhkMatch = useMemo(() => configuration.match(/(\d+)\s*BHK/i), [configuration]);
+  const bhk = bhkMatch ? bhkMatch[1] : '';
+
+  const monthlyRent = pd.monthly_rent ?? d.expectedRent;
+  const securityDeposit = pd.security_deposit ?? d.advanceAmountRent;
+  const maintenance = pd.maintenance ?? pd.maintenance_charges;
+  const electricity = pd.electricity ?? pd.electricity_type;
+  const waterCharges = pd.water_charges ?? pd.water_included;
+
+  const landlordName =
+    pd.landlord_name || pd.landlordName || d.createdBy?.name || '—';
+  const statusLabel = d.isActive === false ? 'Not Active' : 'Vacant';
+
+  const fullAddress = [
+    pd.address_line_1,
+    pd.city,
+    pd.state,
+    pd.country,
+    pd.pin_code || pd.zip_code,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const addressLine = pd.address_line_1 || fullAddress || '—';
+  const city = pd.city || '—';
+  const state = pd.state || '—';
+  const poBox = pd.pin_code || pd.zip_code || pd.po_box || '—';
+
+  const propertyTitle =
+    d.buildingDetails || pd.building_name || vd.villa_name || 'Property';
+  const propertyCode = pd.property_code || pd.propertyCode || d.propertyId;
+
+  const carpetArea = pd.carpet_area_sqft;
+  const builtupArea = pd.builtup_area_sqft || pd.super_builtup_area_sqft;
+  const plotArea = d.dimensionAreaSqft || pd.plot_area_sqft;
+
+  const bedrooms = bhk || fd.no_of_bedrooms || vd.number_of_bedrooms;
+  const bathrooms = fd.no_of_bathrooms || vd.number_of_bathrooms;
+
+  const rentalPurpose = d.rentalFor || pd.rental_purpose || pd.rental_purpose_type || '—';
+  const tenantType = pd.tenant_type || pd.tenant_preference || '—';
+  const petsAllowed = pd.pets_allowed != null ? (pd.pets_allowed ? 'Yes' : 'No') : '—';
+
+  const amenitiesRaw = pd.amenities || fd.amenities || vd.amenities || pd.facilities;
+  const amenitiesList = useMemo(() => {
+    if (Array.isArray(amenitiesRaw)) return amenitiesRaw.filter(Boolean);
+    if (typeof amenitiesRaw === 'string') return amenitiesRaw.split(/[,;|]/).map((s) => s.trim()).filter(Boolean);
+    return [];
+  }, [amenitiesRaw]);
+  const defaultAmenities = ['Parking', 'Private Garden', 'Swimming Pool', 'Power Backup', 'CCTV', 'Gated Community'];
+  const displayAmenities = amenitiesList.length > 0 ? amenitiesList : defaultAmenities;
+
+  const createdByName = d.createdBy?.name || '—';
+  const createdAtStr = formatDate(d.createdAt);
+  const updatedAtStr = formatDate(d.updatedAt);
+  const facing = pd.facing || '—';
+
   const properties = [
     {
       code: 'March 2026',
@@ -128,7 +196,7 @@ const PropertyDetails = () => {
         marginBottom: '0.25rem',
         color: '#000'
       }}>
-        Green Valley Villa 12A
+        {propertyTitle}
       </h2>
       <p style={{ 
         margin: 0, 
@@ -136,7 +204,7 @@ const PropertyDetails = () => {
         fontSize: '1rem',
         fontWeight: 400
       }}>
-        Green Valley Society, Muskat, Oman, 4100001
+        {fullAddress || '—'}
       </p>
     </div>
 
@@ -150,7 +218,7 @@ const PropertyDetails = () => {
         marginBottom: '0.25rem',
         color: '#000'
       }}>
-        OMR 8,500
+        {monthlyRent ? `OMR ${monthlyRent}` : '—'}
       </h2>
       <p style={{ 
         margin: 0, 
@@ -199,7 +267,7 @@ const PropertyDetails = () => {
                       textTransform: 'uppercase',
                       letterSpacing: '0.8px'
                     }}>
-                      PROPERTY TYPE
+              PROPERTY TYPE
                     </p>
                     <p style={{ 
                       fontSize: '0.938rem',
@@ -208,7 +276,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      Villa
+                      {vd.villa_type || pd.property_type || d.rentalType || '—'}
                     </p>
                   </div>
                 </Col>
@@ -231,7 +299,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      PRP-10234
+                      {propertyCode || '—'}
                     </p>
                   </div>
                 </Col>
@@ -254,7 +322,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Green Valley
+                      {pd.project_name || pd.society || '—'}
                     </p>
                   </div>
                 </Col>
@@ -277,7 +345,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Villa 12A
+                      {vd.villa_name || pd.building_name || '—'}
                     </p>
                   </div>
                 </Col>
@@ -300,7 +368,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      2
+                      {d.floor || fd.total_floors || '—'}
                     </p>
                   </div>
                 </Col>
@@ -323,7 +391,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      2023
+                      {pd.year_built || '—'}
                     </p>
                   </div>
                 </Col>
@@ -377,7 +445,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      4
+                      {bedrooms || '—'}
                     </p>
                   </div>
                 </Col>
@@ -400,7 +468,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      2200 sq.ft
+                      {carpetArea ? `${carpetArea} sq.ft` : '—'}
                     </p>
                   </div>
                 </Col>
@@ -423,7 +491,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      2800 sq.ft
+                      {builtupArea ? `${builtupArea} sq.ft` : '—'}
                     </p>
                   </div>
                 </Col>
@@ -446,7 +514,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      4000 sq.ft
+                      {plotArea ? `${plotArea} sq.ft` : '—'}
                     </p>
                   </div>
                 </Col>
@@ -469,7 +537,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      4
+                      {bathrooms || '—'}
                     </p>
                   </div>
                 </Col>
@@ -492,7 +560,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      EAST
+                      {facing}
                     </p>
                   </div>
                 </Col>
@@ -545,7 +613,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      OMR 8,500
+                      {monthlyRent != null ? `OMR ${monthlyRent}` : '—'}
                     </p>
                   </div>
                 </Col>
@@ -568,7 +636,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      OMR 100,000
+                      {securityDeposit != null ? `OMR ${securityDeposit}` : '—'}
                     </p>
                   </div>
                 </Col>
@@ -591,7 +659,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      OMR 1000
+                      {maintenance != null ? (typeof maintenance === 'number' ? `OMR ${maintenance}` : maintenance) : '—'}
                     </p>
                   </div>
                 </Col>
@@ -614,7 +682,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Metered
+                      {electricity || '—'}
                     </p>
                   </div>
                 </Col>
@@ -636,7 +704,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Included
+                      {waterCharges != null ? String(waterCharges) : '—'}
                     </p>
                   </div>
                 </Col>
@@ -691,7 +759,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      Mr.Rajesh Mehta
+                      {landlordName}
                     </p>
                   </div>
                 </Col>
@@ -735,53 +803,15 @@ const PropertyDetails = () => {
               paddingTop: '1.75rem'
             }}>
               <Row>
-               <Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      Parking
-    </p>
-  </div>
-</Col>
-
-<Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      Private Garden
-    </p>
-  </div>
-</Col>
-
-<Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      Swimming Pool
-    </p>
-  </div>
-</Col>
-
-<Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      Power Backup
-    </p>
-  </div>
-</Col>
-
-<Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      CCTV
-    </p>
-  </div>
-</Col>
-
-<Col lg={2} md={4} sm={6}>
-  <div style={{ marginBottom: '1.5rem' }}>
-    <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
-      Gated Community
-    </p>
-  </div>
-</Col>
+                {displayAmenities.map((amenity, index) => (
+                  <Col lg={2} md={4} sm={6} key={index}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <p style={{ fontSize: '1rem', fontWeight: 500, color: 'black', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.8px', backgroundColor: '#f3f4f6', padding: '12px 12px', borderRadius: '6px' }}>
+                        {amenity}
+                      </p>
+                    </div>
+                  </Col>
+                ))}
               </Row>
             </div>
           </CardBody>
@@ -833,7 +863,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      Residential
+                      {rentalPurpose}
                     </p>
                   </div>
                 </Col>
@@ -857,7 +887,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      Family / Company Lease
+                      {tenantType}
                     </p>
                   </div>
                 </Col>
@@ -881,7 +911,7 @@ const PropertyDetails = () => {
                       margin: 0,
                       lineHeight: 1.5
                     }}>
-                      Yes
+                      {petsAllowed}
                     </p>
                   </div>
                 </Col>
@@ -933,7 +963,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Vacant
+                      {statusLabel}
                     </p>
                   </div>
                 </Col>
@@ -1029,7 +1059,7 @@ const PropertyDetails = () => {
                   color: '#000',
                   margin: 0
                 }}>
-                  Green Valley Society, Muskat, Oman
+                  {addressLine}
                 </p>
               </div>
 
@@ -1053,7 +1083,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Muskat
+                      {city}
                     </p>
                   </div>
                 </Col>
@@ -1077,7 +1107,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Muskat
+                      {state}
                     </p>
                   </div>
                 </Col>
@@ -1101,7 +1131,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      401000
+                      {poBox}
                     </p>
                   </div>
                 </Col>
@@ -1182,7 +1212,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      Admin
+                      {createdByName}
                     </p>
                   </div>
                 </Col>
@@ -1206,7 +1236,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      10 Feb 2026
+                      {createdAtStr}
                     </p>
                   </div>
                 </Col>
@@ -1230,7 +1260,7 @@ const PropertyDetails = () => {
                       color: '#000',
                       margin: 0
                     }}>
-                      02 Mar 2026
+                      {updatedAtStr}
                     </p>
                   </div>
                 </Col>

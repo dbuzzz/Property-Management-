@@ -1,155 +1,247 @@
-import ChoicesFormInput from '@/components/from/ChoicesFormInput';
 import TextAreaFormInput from '@/components/from/TextAreaFormInput';
 import TextFormInput from '@/components/from/TextFormInput';
-import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import { API_BASE_URL, AUTH_TOKEN } from '@/constants/api';
+import httpClient from '@/helpers/httpClient';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Card, CardBody, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
-import { useState } from 'react';  
-import { useEffect } from 'react';
-import Choices from 'choices.js';
+import { Controller, useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-import 'choices.js/public/assets/styles/choices.min.css';
-
-
 import * as yup from 'yup';
-const Addlead = () => {
-  
-  const [phone, setPhone] = useState('');
+
+// Fallback select wrapper to keep existing JSX working
+const ChoicesFormInput = (props) => <select {...props} />;
+
+const TENANT_PURPOSES = ['tenant', 'family', 'company_staff', 'bachelor', 'labour'];
+const LANDLORD_PURPOSES = ['landlord', 'owner', 'personal'];
+
+function formatDisplayDate(value) {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return String(value);
+  }
+}
+
+function getDefaultValuesFromLead(lead) {
+  if (!lead) return undefined;
+  const purpose = String(lead.purpose || '').toLowerCase();
+  const isTenant = TENANT_PURPOSES.includes(purpose);
+  const isLandlord = LANDLORD_PURPOSES.includes(purpose);
+  const step = isTenant ? 'tenant' : isLandlord ? 'landlord' : 'main';
+  const leadValue = purpose && purpose !== 'tenant' && purpose !== 'landlord' ? purpose : '';
+  return {
+    first_name: lead.firstName ?? lead.first_name ?? '',
+    last_name: lead.lastName ?? lead.last_name ?? '',
+    description: lead.address ?? '',
+    nationality: lead.nationality ?? '',
+    number: lead.phone_number ?? lead.phoneNumber ?? '',
+    lead_origin: lead.leadOrigin ?? lead.lead_origin ?? 'website',
+    passport_id: lead.passportOrId ?? lead.passport_or_id ?? '',
+    created_at: formatDisplayDate(lead.createdAt ?? lead.created_at ?? ''),
+    updated_at: formatDisplayDate(lead.updatedAt ?? lead.updated_at ?? ''),
+    lead_assign_to_user_id: String(lead.leadAssignTo?.userId ?? lead.lead_assign_to_id ?? ''),
+    country: lead.country ?? '',
+    city: lead.city ?? '',
+    status: lead.isActive === true ? 'Active' : lead.isActive === false ? 'Inactive' : 'Active',
+    po_box: lead.poBox ?? lead.po_box ?? '',
+    comments: lead.comments ?? '',
+    _step: step,
+    _leadValue: leadValue,
+  };
+}
+
+const Addlead = ({ onFormValuesChange, initialData = null, mode = 'create' }) => {
+  const isUpdate = mode === 'update';
+  const defaults = getDefaultValuesFromLead(initialData);
+
+  const [phone, setPhone] = useState(() =>
+    initialData ? (initialData.phone_number ?? initialData.phoneNumber ?? '') : ''
+  );
+  const [step, setStep] = useState(defaults?._step ?? 'main');
+  const [leadValue, setLeadValue] = useState(defaults?._leadValue ?? '');
+
+  // Fallback state for old country dropdown to avoid runtime reference errors
   const [selectedCountry, setSelectedCountry] = useState({ code: 'OM', name: 'Oman' });
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  
-  const countries = [
-    { code: 'GB', name: 'United Kingdom' },
-    { code: 'FR', name: 'France' },
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'US', name: 'U.S.A' },
-    { code: 'DK', name: 'Denmark' },
-    { code: 'CA', name: 'Canada' },
-    { code: 'AU', name: 'Australia' },
-    { code: 'IN', name: 'India' },
-    { code: 'OM', name: 'Oman' },
-    { code: 'ES', name: 'Spain' },
-    { code: 'AE', name: 'United Arab Emirates' }
-  ];
-  
-  
+  const countries = [];
 
-const [step, setStep] = useState('main'); // main | tenant | landlord
-const [leadValue, setLeadValue] = useState('');
-
-const [leadSubType, setLeadSubType] = useState('');
-   const [leadType, setLeadType] = useState('');
   const messageSchema = yup.object({
-    name: yup.string().required('Please enter name'),
-    description: yup.string().required('Please enter description'),
-    zipCode: yup.string().required('Please enter Zip-Code'),
-    email: yup.string().email().required('Please enter email'),
-    number: yup.string().required('Please enter number'),
-    propertiesNumber: yup.string().required('Please enter Properties Number'),
-    facebookUrl: yup.string().required('Please enter Facebook Url'),
-    instagramUrl: yup.string().required('Please enter Instagram Url'),
-    twitterUrl: yup.string().required('Please enter Twitter Url'),
-    viewProperties: yup.string().required('Please enter view properties'),
-    ownProperties: yup.string().required('Please enter own Properties')
+    first_name: yup.string().required('Please enter first name'),
+    last_name: yup.string().required('Please enter last name'),
+    description: yup.string().required('Please enter address'),
+    lead_assign_to_user_id: yup.string().required('Please enter Lead Assigned To (user ID)'),
+    lead_origin: yup.string(),
   });
+
   const {
     handleSubmit,
-    control
+    control,
+    watch,
+    reset,
   } = useForm({
-    resolver: yupResolver(messageSchema)
+    resolver: yupResolver(messageSchema),
+    defaultValues: defaults
+      ? {
+          first_name: defaults.first_name,
+          last_name: defaults.last_name,
+          description: defaults.description,
+          nationality: defaults.nationality,
+          number: defaults.number,
+          lead_origin: defaults.lead_origin,
+          passport_id: defaults.passport_id,
+          lead_assign_to_user_id: defaults.lead_assign_to_user_id,
+          'Created At': defaults.created_at,
+          'Updated At': defaults.updated_at,
+          country: defaults.country,
+          city: defaults.city,
+          status: defaults.status,
+          'PO BOX': defaults.po_box,
+          Comments: defaults.comments,
+        }
+      : {
+          country: '',
+          city: '',
+          status: 'Active',
+          'PO BOX': '',
+          Comments: '',
+        },
   });
-  
-  // Add CSS for dropdown spacing and emoji rendering
+
   useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .choices__list--dropdown .choices__item {
-        padding-left: 16px !important;
+    if (!initialData) return;
+    const d = getDefaultValuesFromLead(initialData);
+    if (!d) return;
+    reset({
+      first_name: d.first_name,
+      last_name: d.last_name,
+      description: d.description,
+      nationality: d.nationality,
+      number: d.number,
+      lead_origin: d.lead_origin,
+      passport_id: d.passport_id,
+      lead_assign_to_user_id: d.lead_assign_to_user_id,
+      'Created At': d.created_at,
+      'Updated At': d.updated_at,
+      country: d.country,
+      city: d.city,
+      status: d.status,
+      'PO BOX': d.po_box,
+      Comments: d.comments,
+    });
+    setStep(d._step);
+    setLeadValue(d._leadValue);
+    setPhone(initialData.phone_number ?? initialData.phoneNumber ?? '');
+  }, [initialData, reset]);
+
+  const watched = watch();
+
+  useEffect(() => {
+    const leadType =
+      step === 'tenant'
+        ? (leadValue ? leadValue.charAt(0).toUpperCase() + leadValue.slice(1).replace('_', ' ') : 'Tenant')
+        : step === 'landlord'
+          ? (leadValue ? leadValue.charAt(0).toUpperCase() + leadValue.slice(1) : 'Landlord')
+          : '';
+    if (typeof onFormValuesChange === 'function') {
+      onFormValuesChange({
+        first_name: watched.first_name,
+        last_name: watched.last_name,
+        description: watched.description,
+        phone,
+        email: watched.email,
+        leadType,
+        leadId: watched.leadId,
+        status: watched.status || 'Available',
+        createdAt: watched['Created At'],
+        updatedAt: watched['Updated At'],
+      });
+    }
+  }, [watched, phone, step, leadValue, onFormValuesChange]);
+
+  const purposeValue =
+    step === 'tenant' ? (leadValue || 'tenant') : step === 'landlord' ? (leadValue || 'landlord') : '';
+
+  const onSubmit = handleSubmit(async values => {
+    try {
+      if (!purposeValue) {
+        alert('Please select Lead Type (Tenant or Landlord and then the sub-type).');
+        return;
       }
-      .choices__list--dropdown {
-        padding-left: 8px !important;
+      const assignToUserId = Number(values.lead_assign_to_user_id);
+      if (!Number.isInteger(assignToUserId) || assignToUserId < 1) {
+        alert('Please enter a valid user ID for Lead Assigned To (e.g. 36).');
+        return;
       }
-      .choices__list--dropdown .choices__item,
-      .choices__inner,
-      select.form-control {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif !important;
+      const countryId = initialData?.country?.country_id ?? initialData?.countryId ?? 2;
+      const cityId = initialData?.city?.city_id ?? initialData?.cityId ?? 1;
+      const nationalityId = initialData?.nationality?.nationality_id ?? initialData?.nationalityId ?? 3;
+
+      if (isUpdate && initialData) {
+        const updatePayload = {
+          lead_id: initialData.leadId ?? initialData.lead_id,
+          lead_assign_to: { user_id: assignToUserId },
+          first_name: values.first_name,
+          last_name: values.last_name,
+          lead_origin: values.lead_origin || 'website',
+          address: values.description ?? '',
+          country: { country_id: countryId },
+          city: { city_id: cityId },
+          nationality: { nationality_id: nationalityId },
+          passport_or_id: values.passport_id ?? '',
+          purpose: purposeValue,
+          permissions: { property: true },
+        };
+        await httpClient.put(`${API_BASE_URL}/lead/update/`, updatePayload, {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        alert('Lead updated successfully.');
+        return;
       }
-      
-      .custom-country-dropdown {
-        position: relative;
-      }
-      
-      .country-select-box {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        background: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      
-      .country-select-box:hover {
-        border-color: #86b7fe;
-      }
-      
-      .country-dropdown-list {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        margin-top: 4px;
-        max-height: 250px;
-        overflow-y: auto;
-        z-index: 1000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      }
-      
-      .country-dropdown-item {
-        padding: 10px 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        transition: background 0.2s;
-      }
-      
-      .country-dropdown-item:hover {
-        background: #f8f9fa;
-      }
-      
-      .country-flag {
-        width: 24px;
-        height: 18px;
-        display: inline-block;
-        border-radius: 2px;
-        object-fit: cover;
-      }
-      
-      .country-name {
-        font-size: 14px;
-        color: #333;
-      }
-      
-      .dropdown-arrow {
-        font-size: 12px;
-        color: #666;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-  
-  return <form onSubmit={handleSubmit(() => {})}>
+
+      const payload = {
+        lead_assign_to: { user_id: assignToUserId },
+        first_name: values.first_name,
+        last_name: values.last_name,
+        lead_origin: values.lead_origin || 'website',
+        phone_number: phone,
+        address: values.description,
+        country: { country_id: 2 },
+        city: { city_id: 1 },
+        nationality: { nationality_id: 3 },
+        passport_or_id: values.passport_id ?? '',
+        purpose: purposeValue,
+        permissions: { property: true, lead: true },
+      };
+
+      await httpClient.post(`${API_BASE_URL}/lead/create/`, payload, {
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      alert('Lead created successfully.');
+    } catch (e) {
+      console.error(isUpdate ? 'Failed to update lead' : 'Failed to create lead', e);
+      alert(isUpdate ? 'Failed to update lead. Please try again.' : 'Failed to create lead. Please try again.');
+    }
+  });
+
+  return <form onSubmit={onSubmit}>
     
       <Card>
         <CardHeader>
@@ -159,20 +251,12 @@ const [leadSubType, setLeadSubType] = useState('');
           <Row>
             <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="First name" placeholder="Enter You first name" label="First Name"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput control={control} name="first_name" placeholder="Enter you first name" label="First Name" />
               </div>
             </Col>
             <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="last name" placeholder="Enter you last name" label="Last Name"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput control={control} name="last_name" placeholder="Enter you last name" label="Last Name" />
               </div>
             </Col>
                         {/* ✅ CONTACT NUMBER WITH COUNTRY CODE */}
@@ -192,23 +276,14 @@ const [leadSubType, setLeadSubType] = useState('');
   </div>
 </Col>
 
-             <Col lg={6}>
+            <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="viewProperties"  placeholder="Enter Nationality" label="Nationality"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput control={control} name="nationality" placeholder="Enter Nationality" label="Nationality" />
               </div>
             </Col>
-          
-             <Col lg={6}>
+            <Col lg={6}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Passport id" placeholder="Enter Detail" label="Passport ID/ Number"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput control={control} name="passport_id" placeholder="Enter Detail" label="Passport ID/ Number" />
               </div>
             </Col>
            
@@ -417,20 +492,34 @@ const [leadSubType, setLeadSubType] = useState('');
 
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Created At" placeholder="Time-Lapse" label="Created At" style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }}/>
+                <TextFormInput
+                  control={control}
+                  name="Created At"
+                  placeholder="Time-Lapse"
+                  label="Created At"
+                  readOnly
+                  style={{
+                    backgroundColor: '#F9F9FC',
+                    fontWeight: '600',
+                    border: '1.5px solid #c6c6c6',
+                  }}
+                />
               </div>
             </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Updated At" placeholder="Time-Lapse" label="Updated At"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput
+                  control={control}
+                  name="Updated At"
+                  placeholder="Time-Lapse"
+                  label="Updated At"
+                  readOnly
+                  style={{
+                    backgroundColor: '#F9F9FC',
+                    fontWeight: '600',
+                    border: '1.5px solid #c6c6c6',
+                  }}
+                />
               </div>
             </Col>
             <Col lg={4}>
@@ -444,11 +533,17 @@ const [leadSubType, setLeadSubType] = useState('');
                         </Col>
             <Col lg={4}>
               <div className="mb-3">
-                <TextFormInput control={control} name="Assigned to" placeholder="Lead Assigned To" label="Lead Assigned To"style={{
-          backgroundColor: '#F9F9FC',
-          fontWeight: '600',
-          border: '1.5px solid #c6c6c6'
-        }} />
+                <TextFormInput
+                  control={control}
+                  name="lead_assign_to_user_id"
+                  placeholder="e.g. 36"
+                  label="Lead Assigned To (User ID)"
+                  style={{
+                    backgroundColor: '#F9F9FC',
+                    fontWeight: '600',
+                    border: '1.5px solid #c6c6c6',
+                  }}
+                />
               </div>
             </Col>
              <Col lg={4}>

@@ -1,24 +1,32 @@
 import properties1 from '@/assets/images/properties/p-1.jpg';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { currency } from '@/context/constants';
 import { Button, Card, CardBody, CardFooter, Col, Row } from 'react-bootstrap';
-const PropertyAddCard = () => {
-  return <Col xl={3} lg={4}>
+
+const PropertyAddCard = ({ preview = {}, mode = 'create' }) => {
+  const name = preview.building_name || preview.name || '—';
+  const address = preview.address || '—';
+  const price = preview.price || '0';
+  const beds = preview.beds || '—';
+  const baths = preview.baths || '—';
+  const area = preview.area || '—';
+  const floor = preview.floor || '—';
+  const statusBadge = preview.status || 'For Rent';
+
+  return (
+    <Col xl={3} lg={4}>
       <Card>
         <CardBody>
           <div className="position-relative">
             <img src={properties1} alt="properties" className="img-fluid rounded bg-light" />
             <span className="position-absolute top-0 end-0 p-1">
-              <span className="badge bg-success text-light fs-13">For Rent</span>
+              <span className="badge bg-success text-light fs-13">{statusBadge}</span>
             </span>
           </div>
           <div className="mt-3">
-            <h4 className="mb-1">
-              Dvilla Residences Batu<span className="fs-14 text-muted ms-1">(Residences)</span>
-            </h4>
-            <p className="mb-1">4604 , Philli Lane Kiowa U.S.A</p>
+            <h4 className="mb-1">{name}</h4>
+            <p className="mb-1">{address}</p>
             <h5 className="text-dark fw-medium mt-3">Price :</h5>
-            <h4 className="fw-semibold mt-2 text-muted">{}OMR8,930.00</h4>
+            <h4 className="fw-semibold mt-2 text-muted">₹{price}</h4>
           </div>
           <Row className="mt-2 g-2">
             <Col lg={3} xs={3}>
@@ -26,7 +34,7 @@ const PropertyAddCard = () => {
                 <span className="fs-16">
                   <IconifyIcon icon="solar:bed-broken" className="align-middle" />
                 </span>
-                &nbsp;5 Beds
+                &nbsp;{beds} Beds
               </span>
             </Col>
             <Col lg={3} xs={3}>
@@ -34,7 +42,7 @@ const PropertyAddCard = () => {
                 <span className="fs-16">
                   <IconifyIcon icon="solar:bath-broken" className="align-middle" />
                 </span>
-                &nbsp;4 Bath
+                &nbsp;{baths} Bath
               </span>
             </Col>
             <Col lg={3} xs={3}>
@@ -42,15 +50,18 @@ const PropertyAddCard = () => {
                 <span className="fs-16">
                   <IconifyIcon icon="solar:scale-broken" className="align-middle" />
                 </span>
-                &nbsp;1400ft
+                &nbsp;{area}ft
               </span>
             </Col>
             <Col lg={3} xs={3}>
               <span className="badge bg-light-subtle text-muted border fs-12">
                 <span className="fs-16">
-                  <IconifyIcon icon="solar:double-alt-arrow-up-broken" className="align-middle" />
+                  <IconifyIcon
+                    icon="solar:double-alt-arrow-up-broken"
+                    className="align-middle"
+                  />
                 </span>
-                &nbsp;3 Floor
+                &nbsp;{floor} Floor
               </span>
             </Col>
           </Row>
@@ -63,21 +74,16 @@ const PropertyAddCard = () => {
               </Button>
             </Col>
             <Col lg={6}>
-             <Button 
-  variant="primary" 
-  className="w-100"
-  style={{ 
-    backgroundColor: '#5D7186', 
-    borderColor: '#5D7186',
-    padding: '9px 30px'  // ✅ Button bada ho jayega
-  }}
->
-  Add Property
-</Button>
+              <Button variant="primary" className="w-100">
+                {mode === 'update' ? 'Update Property' : 'Add Property'}
+              </Button>
             </Col>
           </Row>
         </CardFooter>
       </Card>
-    </Col>;
+    </Col>
+  );
 };
+
 export default PropertyAddCard;
+

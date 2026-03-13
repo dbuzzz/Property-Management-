@@ -233,7 +233,7 @@ import Nouislider from 'nouislider-react';
 import { useState } from 'react';
 import { Button, Card, CardBody, CardFooter, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
 
-const PropertiesFilter = () => {
+const PropertiesFilter = ({ onFiltersChange }) => {
   const [selectedValue, setSelectedValue] = useState([6000, 100000]);
   const currency = 'OMR';
 
@@ -479,7 +479,18 @@ const PropertiesFilter = () => {
           </Row>
         </CardBody>
         <CardFooter>
-          <Button variant="primary" className="w-100">
+          <Button
+            variant="primary"
+            className="w-100"
+            onClick={() => {
+              if (onFiltersChange) {
+                onFiltersChange({
+                  minPrice: selectedValue[0],
+                  maxPrice: selectedValue[1],
+                });
+              }
+            }}
+          >
             Apply
           </Button>
         </CardFooter>

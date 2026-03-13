@@ -1,1122 +1,857 @@
 import ChoicesFormInput from '@/components/from/ChoicesFormInput';
 import TextFormInput from '@/components/from/TextFormInput';
 import TextAreaFormInput from '@/components/from/TextAreaFormInput';
+import { API_BASE_URL, AUTH_TOKEN } from '@/constants/api';
+import httpClient from '@/helpers/httpClient';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Card, CardBody, Col, Row, Form, Button } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
-import * as yup from 'yup';
-import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useEffect } from 'react';
-import  './PropertyAdd.css';
+import * as yup from 'yup';
 
-/* ================= SCHEMA ================= */
-const schema = yup.object({});
+const schema = yup.object({
+  landlord_id: yup
+    .number()
+    .typeError('Enter a valid Landlord ID')
+    .required('Landlord ID is required')
+    .min(1, 'Landlord ID must be at least 1')
+    .integer(),
+});
 
-const PropertyAdd = () => {
-  const [propertyType , setPropertyType] = useState('flat')
-  const [phone, setPhone] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState({ code: 'OM', name: 'Oman' });
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-   const countries = [
-    { code: 'GB', name: 'United Kingdom' },
-    { code: 'FR', name: 'France' },
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'US', name: 'U.S.A' },
-    { code: 'DK', name: 'Denmark' },
-    { code: 'CA', name: 'Canada' },
-    { code: 'AU', name: 'Australia' },
-    { code: 'IN', name: 'India' },
-    { code: 'OM', name: 'Oman' },
-    { code: 'ES', name: 'Spain' },
-    { code: 'AE', name: 'United Arab Emirates' }
-  ];
-  
-  const { handleSubmit, control } = useForm({
+const toNum = (v) => {
+  if (v === '' || v == null) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const toStr = (v) => (v == null ? '' : String(v));
+
+function toApiDate(value) {
+  const s = toStr(value).trim();
+  if (!s) return null;
+  const parts = s.split(/[-/.]/).map((p) => parseInt(p, 10));
+  if (parts.length === 3 && parts.every(Number.isFinite)) {
+    const [a, b, c] = parts;
+    if (a > 31)
+      return `${String(a).padStart(4, '0')}-${String(b).padStart(2, '0')}-${String(
+        c
+      ).padStart(2, '0')}`;
+    const y = c > 99 ? c : c < 50 ? 2000 + c : 1900 + c;
+    return `${String(y).padStart(4, '0')}-${String(b).padStart(2, '0')}-${String(
+      a
+    ).padStart(2, '0')}`;
+  }
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+const FLAT_CONFIG_MAP = {
+  Studio: 'Studio',
+  '1 BHK': '1BHK',
+  '2 BHK': '2BHK',
+  '3 BHK': '3BHK',
+  '1BHK': '1BHK',
+  '2BHK': '2BHK',
+  '3BHK': '3BHK',
+};
+
+const NUMERIC_KEYS = new Set([
+  'user_id',
+  'landlord_id',
+  'created_by_id',
+  'current_tenant_id',
+  'agreement_id',
+  'year_of_construction',
+  'flat_number',
+  'floor_number',
+  'total_floors',
+  'no_of_bathrooms',
+  'no_of_cabins',
+  'no_of_washrooms',
+  'number_of_bedrooms',
+  'number_of_bathrooms',
+  'living_rooms_count',
+  'lease_tenure_years',
+  'lock_in_period_months',
+  'security_deposit_months',
+  'advance_amount_rent',
+]);
+
+function sanitizePayload(obj) {
+  if (obj === null || obj === undefined) return undefined;
+  if (Array.isArray(obj)) return obj.map((item) => sanitizePayload(item));
+  if (typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === null || v === undefined) {
+        out[k] = NUMERIC_KEYS.has(k) ? 0 : '';
+      } else {
+        out[k] = sanitizePayload(v);
+      }
+    }
+    return out;
+  }
+  return obj;
+}
+
+function getDefaultsFromProperty(prop) {
+  if (!prop) return undefined;
+  const pd = prop.propertyDetails ?? {};
+  const fd = prop.flatData ?? {};
+  const type = (prop.rentalType || 'Flat').toLowerCase();
+  return {
+    property_type: type === 'villa' ? 'villa' : 'flat',
+    building_name: pd.building_name || prop.buildingDetails || '',
+    building_block: fd.building_block || '',
+    floor_number: prop.floor || fd.floor_number || '',
+    flat_no: prop.flatNumber || fd.flat_number || '',
+    total_floors: pd.total_floors || '',
+    carpet_area: pd.carpet_area_sqft || prop.dimensionAreaSqft || '',
+    builtup_area: pd.builtup_area_sqft || '',
+    monthly_rent: pd.monthly_rent || prop.expectedRent || '',
+    security_deposit: pd.security_deposit_amount || '',
+    electricity_type: pd.electricity_charge_type || 'Meter',
+    water_type: pd.water_charge_type || 'Meter',
+    late_fee: pd.late_fee_type === 'Percentage' ? 'Yes' : 'No',
+    status: pd.current_status || 'Vacant',
+    address1: pd.address_line_1 || '',
+    address2: pd.address_line_2 || '',
+    area: pd.area_zone || '',
+    city: pd.city || '',
+    state: pd.state || '',
+    country: pd.country || '',
+    po_box: pd.pincode || '',
+    map_url: pd.google_map_location || '',
+    other_charges: pd.other_charges || '',
+    available_from: pd.available_from || '',
+    current_tenant: pd.current_tenant_id || '',
+    internal_notes: pd.internal_notes || '',
+    configuration: fd.flat_configuration || 'Studio',
+    bathrooms: fd.no_of_bathrooms || '',
+    kitchen_type: fd.kitchen_type || 'Open',
+    facing: fd.facing || 'East',
+    balcony: fd.balcony ? 'Yes' : 'No',
+  };
+}
+
+const PropertyAdd = ({ initialData = null, mode = 'create', onFormValuesChange }) => {
+  const isUpdate = mode === 'update';
+  const defaults = getDefaultsFromProperty(initialData);
+
+  const { handleSubmit, control, watch } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {}
+    defaultValues:
+      defaults || {
+        property_type: 'flat',
+        building_name: '',
+        configuration: 'Studio',
+        balcony: 'No',
+        kitchen_type: 'Open',
+        store_room: 'No',
+        facing: 'East',
+        electricity_type: 'Meter',
+        water_type: 'Meter',
+        late_fee: 'No',
+        rental_purpose: 'Residential',
+        status: 'Vacant',
+        landlord_id: '',
+        assigned_to_user_id: 36,
+      },
   });
-  // Add CSS for dropdown spacing and emoji rendering
-    useEffect(() => {
-      const style = document.createElement('style');
-      style.innerHTML = `
-      
-        
-        .custom-country-dropdown {
-          position: relative;
-        }
-        
-        .country-select-box {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          background: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        
-        .country-select-box:hover {
-          border-color: #86b7fe;
-        }
-        
-        .country-dropdown-list {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: white;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          margin-top: 4px;
-          max-height: 250px;
-          overflow-y: auto;
-          z-index: 1000;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .country-dropdown-item {
-          padding: 10px 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          transition: background 0.2s;
-        }
-        
-        .country-dropdown-item:hover {
-          background: #f8f9fa;
-        }
-        
-        .country-flag {
-          width: 24px;
-          height: 18px;
-          display: inline-block;
-          border-radius: 2px;
-          object-fit: cover;
-        }
-        
-        .country-name {
-          font-size: 14px;
-          color: #333;
-        }
-        
-        .dropdown-arrow {
-          font-size: 12px;
-          color: #666;
-        }
-      `;
-      document.head.appendChild(style);
-      return () => {
-        document.head.removeChild(style);
+
+  const watched = watch();
+
+  useEffect(() => {
+    if (typeof onFormValuesChange !== 'function') return;
+    const buildingName = watched.building_name || defaults?.building_name || '';
+    const address = watched.address1 || defaults?.address1 || '';
+    const city = watched.city || defaults?.city || '';
+    const country = watched.country || defaults?.country || '';
+    const fullAddress = [address, city, country].filter(Boolean).join(', ');
+    const price = watched.monthly_rent || defaults?.monthly_rent || '';
+    const beds = (watched.configuration || defaults?.configuration || '')
+      .replace(/[^0-9]/g, '') || '';
+    const baths = watched.bathrooms || defaults?.bathrooms || '';
+    const area = watched.carpet_area || defaults?.carpet_area || '';
+    const floor = watched.floor_number || defaults?.floor_number || '';
+    const status = watched.status || defaults?.status || 'For Rent';
+
+    onFormValuesChange({
+      building_name: buildingName,
+      name: buildingName,
+      address: fullAddress,
+      price,
+      beds,
+      baths,
+      area,
+      floor,
+      status,
+    });
+  }, [watched, defaults, onFormValuesChange]);
+
+  const onSubmit = handleSubmit(async (values) => {
+    try {
+      const assignedUserId = toNum(values.assigned_to_user_id) || 36;
+      const propertyType = values.property_type || 'flat';
+      const rentalType =
+        propertyType === 'villa'
+          ? 'Villa'
+          : propertyType === 'office'
+            ? 'Commercial'
+            : 'Flat';
+
+      const landlordId = toNum(values.landlord_id);
+      const property_details = {
+        building_name: toStr(values.building_name),
+        total_floors: toNum(values.total_floors),
+        carpet_area_sqft: toStr(values.carpet_area),
+        builtup_area_sqft: toStr(values.builtup_area),
+        monthly_rent: toStr(values.monthly_rent),
+        security_deposit_amount: toStr(values.security_deposit),
+        electricity_charge_type: toStr(values.electricity_type),
+        water_charge_type: toStr(values.water_type),
+        late_fee_type: values.late_fee === 'Yes' ? 'Percentage' : 'Fixed',
+        late_fee_value: values.late_fee === 'Yes' ? '0' : '0',
+        current_status: toStr(values.status),
+        landlord_id: landlordId,
+        created_by_id: assignedUserId,
+        address_line_1: toStr(values.address1),
+        address_line_2: toStr(values.address2),
+        area_zone: toStr(values.area),
+        city: toStr(values.city),
+        state: toStr(values.state),
+        country: toStr(values.country),
+        pincode: toStr(values.po_box),
+        google_map_location: toStr(values.map_url),
+        year_of_construction: 0,
+        other_charges: toStr(values.other_charges),
+        available_from:
+          toApiDate(values.available_from) || new Date().toISOString().slice(0, 10),
+        current_tenant_id: toNum(values.current_tenant) || 0,
+        internal_notes: toStr(values.internal_notes),
       };
-    }, []);
+
+      const payload = {
+        block: toStr(values.building_block),
+        building_details: toStr(values.building_name),
+        floor: toStr(values.floor_number),
+        flat_number: toNum(values.flat_no),
+        dimension_length_ft: toStr(values.dimension_length ?? ''),
+        dimension_breadth_ft: toStr(values.dimension_breadth ?? ''),
+        dimension_area_sqft: toStr(values.carpet_area ?? ''),
+        rental_type: rentalType,
+        rental_for: values.rental_purpose === 'Commercial' ? 'Commercial' : 'Family',
+        advance_amount_rent: 0,
+        expected_rent: toStr(values.monthly_rent ?? ''),
+        agreement_id: 0,
+        photos: [],
+        videos: [],
+        assigned_to: { user_id: assignedUserId },
+        property_details,
+      };
+
+      if (propertyType === 'flat') {
+        payload.flat_data = {
+          flat_number: toStr(values.flat_no),
+          floor_number: toNum(values.floor_number),
+          building_block: toStr(values.building_block),
+          flat_configuration: FLAT_CONFIG_MAP[toStr(values.configuration)] || 'Studio',
+          no_of_bathrooms: toNum(values.bathrooms),
+          kitchen_type: toStr(values.kitchen_type),
+          facing: toStr(values.facing),
+          balcony: values.balcony === 'Yes',
+          parking: values.amenity_Parking ?? false,
+          lift: values.amenity_Lift ?? false,
+          security: values.amenity_Security ?? false,
+          gas_pipeline: values.amenity_GasPipeline ?? false,
+          water_supply: values.amenity_WaterSupply ?? false,
+          intercom: values.amenity_Intercom ?? false,
+          fire_safety: values.amenity_FireSafety ?? false,
+          power_backup: values.amenity_PowerBackup ?? false,
+          cctv: values.amenity_CCTV ?? false,
+          allowed_tenant_types: [
+            values.tenant_Bachelor && 'Bachelor',
+            values.tenant_Family && 'Family',
+            values.tenant_CompanyStaff && 'Company Staff',
+            values.tenant_Labour && 'Labour',
+          ].filter(Boolean),
+          store_room: values.store_room === 'Yes',
+          maintenance_charge_amount: toStr(values.maintenance),
+        };
+      } else if (propertyType === 'villa') {
+        payload.villa_data = {
+          villa_name: toStr(values.building_name) || 'N/A',
+          villa_type: 'Independent',
+          villa_configuration: FLAT_CONFIG_MAP[toStr(values.configuration)] || '2BHK',
+          project_name: 'N/A',
+          plot_area_sqft: toStr(values.carpet_area) || 'N/A',
+          number_of_bedrooms: 0,
+          number_of_bathrooms: toNum(values.bathrooms) || 0,
+          living_rooms_count: 0,
+          servant_room: false,
+          balcony_or_sitout: values.balcony === 'Yes',
+          private_garden: false,
+          terrace_access: false,
+          boundary_wall: false,
+          driveway: false,
+          private_parking: 'Open',
+          villa_maintenance_charge_type: 'Monthly',
+          gardening_charges: '0',
+          water_supply_24x7: false,
+          security_guard: values.amenity_Security ?? false,
+          clubhouse_access: false,
+          gym: false,
+          childrens_play_area: false,
+          internal_roads: false,
+          street_lights: false,
+          gated_community: false,
+          bachelor_allowed: false,
+          pets_allowed: false,
+          power_backup: values.amenity_PowerBackup ?? false,
+          cctv: values.amenity_CCTV ?? false,
+          allowed_tenant_types: [
+            values.tenant_Bachelor && 'Bachelor',
+            values.tenant_Family && 'Family',
+            values.tenant_CompanyStaff && 'Company Staff',
+            values.tenant_Labour && 'Labour',
+          ].filter(Boolean),
+          store_room: values.store_room === 'Yes',
+          maintenance_charge_amount: toStr(values.maintenance) || '0',
+        };
+      } else {
+        payload.commercial_data = {
+          commercial_category: 'Shop',
+          floor_number: 0,
+          frontage_width_ft: '0',
+          ceiling_height_ft: '0',
+          no_of_cabins: 0,
+          no_of_washrooms: 0,
+          loading_area: 'Warehouse',
+          power_load_kw: '0',
+          has_dg_backup: false,
+          lift_type: 'Passenger',
+          fire_safety_compliant: false,
+          emergency_exit: false,
+          parking_availability: 'Open',
+          commercial_maintenance_charge_type: 'Monthly',
+          maintenance_charge_amount: '0',
+          gst_applicable: false,
+          gst_percentage: '0',
+          security_deposit_months: 0,
+          lease_type: 'Company',
+          lease_tenure_years: 0,
+          lock_in_period_months: 0,
+          allowed_business: 'N/A',
+          prohibited_business: 'N/A',
+        };
+      }
+
+      const sanitized = sanitizePayload(payload);
+
+      if (isUpdate && initialData?.propertyId) {
+        const updatePayload = {
+          property_id: initialData.propertyId,
+          ...sanitized,
+        };
+        await httpClient.put(`${API_BASE_URL}/property/update/`, updatePayload, {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        alert('Property updated successfully.');
+      } else {
+        await httpClient.post(`${API_BASE_URL}/property/create/`, sanitized, {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        alert('Property added successfully.');
+      }
+    } catch (e) {
+      const res = e?.response?.data;
+      console.error('Failed to add property', e);
+      console.error('Server response:', res);
+      let msg = 'Failed to add property. Please try again.';
+      if (res) {
+        if (typeof res.message === 'string') msg = res.message;
+        else if (typeof res.detail === 'string') msg = res.detail;
+        else if (typeof res === 'object') {
+          const parts = [];
+          for (const [key, val] of Object.entries(res)) {
+            if (Array.isArray(val)) parts.push(`${key}: ${val.join(', ')}`);
+            else if (typeof val === 'string') parts.push(`${key}: ${val}`);
+            else parts.push(`${key}: ${JSON.stringify(val)}`);
+          }
+          if (parts.length) msg = parts.join('\n');
+        }
+      } else if (e?.message) msg = e.message;
+      alert(msg);
+    }
+  });
 
   return (
-    <form onSubmit={handleSubmit(() => {})}>
-
-      {/* ================= HEADER ================= */}
-     
-
-  {/* <option value="flat">Flat / Apartment</option>
-  <option value="villa">Villa/Banglow</option>
-  <option value="office">Commercial</option>
-  <option value="office">werehouse</option> */}
-
-  
-
-           
-          
-      {/* ================= BASIC PROPERTY DETAILS ================= */}
+    <form onSubmit={onSubmit}>
       <Card className="mb-4">
         <CardBody>
-<h4 className="fw-semibold">
-  {propertyType === 'flat' && 'Basic Property Details'}
-  {propertyType === 'villa' && 'Basic Villa Details'}
-  {propertyType === 'commercial' && 'Basic Commercial Details'}
-  {propertyType === 'warehouse' && 'Basic Warehouse Details'}
-</h4>
+          <h4 className="fw-semibold">Basic Property Details</h4>
           <hr />
           <Row className="g-3">
             <Col lg={4}>
-  <label className="form-label">Select Property Type</label>
- <select
-  className="form-control"
- style ={{ backgroundColor: '#F9F9FC' }}
-  onChange={(e) => setPropertyType(e.target.value)}
-  value={propertyType}
->
-  <option value="flat">Flat / Apartment</option>
-  <option value="villa">Villa/Banglow</option>
-  <option value="commercial">Commercial</option>
-  <option value="warehouse">Warehouse</option>
-</select>
-</Col>
-
-            {propertyType === 'flat' && 
-            <>
-            <Col lg={4}><TextFormInput control={control}style ={{ backgroundColor: '#F9F9FC' }} name="property_code" label="Property Code / ID" placeholder="Auto-Generated" /></Col>
+              <label className="form-label">Select Property Type</label>
+              <Controller
+                name="property_type"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="flat">Flat / Apartment</option>
+                    <option value="villa">Villa/Banglow</option>
+                    <option value="office">Commercial</option>
+                    <option value="warehouse">Warehouse</option>
+                  </select>
+                )}
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="property_code"
+                label="Property Code / ID"
+                placeholder="Auto-Generated"
+              />
+            </Col>
             <Col lg={4}>
               <label className="form-label">Building Name</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Select Building Name</option>
-              </ChoicesFormInput>
+              <Controller
+                name="building_name"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Building Name"
+                    {...field}
+                  />
+                )}
+              />
             </Col>
-            
-<Col lg={4}>
-  <TextFormInput 
-    control={control} 
-    name="building_block" 
-    label="Building Block" 
-    style={{ backgroundColor: '#F9F9FC' }}
-  />
-</Col>
-<Col lg={4}>
-  <TextFormInput 
-    control={control} 
-    name="floor_number" 
-    label="Floor Number" 
-    style={{ backgroundColor: '#F9F9FC' }}
-  />
-</Col>
             <Col lg={4}>
-  <TextFormInput 
-    control={control} 
-    name="flat_no" 
-    label="Flat No / Name" 
-    style={{ backgroundColor: '#F9F9FC' }}
-  />
-</Col>
-           <Col lg={4}>
-  <TextFormInput 
-    control={control} 
-    name="total_floors" 
-    label="Total Floors (Optional)" 
-    style={{ backgroundColor: '#F9F9FC' }}
-  />
-</Col>
-</>}
-
-            {propertyType === 'villa' && 
-            <>
-            <Col lg={4} ><TextFormInput control={control} name="property_code" label="Property Code / ID" placeholder="Auto-Generated" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}>
-              <label className="form-label">Villa Name / Number</label>
-              <ChoicesFormInput className="form-control" >
-                <option>Villa Name / Number</option>
-              </ChoicesFormInput>
+              <TextFormInput control={control} name="building_block" label="Building Block" />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="building_block" label="Project / Society Name" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="floor_number" label="Unit Number (Gated)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="flat_no" label="Total Floors" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="total_floors" label="Year of Construction" style={{ backgroundColor: '#F9F9FC' }}/></Col></>}
-
-            {propertyType === 'commercial' && 
-            <>
-            <Col lg={4}><TextFormInput control={control} name="property_code" label="Property Code / ID" placeholder="Auto-Generated"style={{ backgroundColor: '#F9F9FC' }} /></Col>
             <Col lg={4}>
-              <label className="form-label">Commercial Category</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Shop</option>
-              </ChoicesFormInput>
+              <TextFormInput control={control} name="floor_number" label="Floor Number" />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="building_block" label="Building / Complex Name" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="floor_number" label="Unit / Shop / Office No." style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="flat_no" label="Floor Number"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="flat_no" label="Total Floors" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="total_floors" label="Year of Construction" style={{ backgroundColor: '#F9F9FC' }}/></Col></>}
-
-              {propertyType === 'warehouse' && 
-            <>
-            <Col lg={4}><TextFormInput control={control} name="property_code" label="Property Code / ID" placeholder="Auto-Generated"style={{ backgroundColor: '#F9F9FC' }} /></Col>
             <Col lg={4}>
-              <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Warehouse Category</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Shop</option>
-              </ChoicesFormInput>
+              <TextFormInput control={control} name="flat_no" label="Flat No / Name" />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="building_block" label="Warehouse Name / Code" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="floor_number" label="Indusrial Estate / MIDC" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="flat_no" label="Plot / Shed Number" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="total_floors" label="Year of Construction" style={{ backgroundColor: '#F9F9FC' }}/></Col></>}
-              
+            <Col lg={4}>
+              <TextFormInput control={control} name="total_floors" label="Total Floors (Bldg)" />
+            </Col>
           </Row>
         </CardBody>
       </Card>
 
-      {/* ================= FLAT CONFIGURATION ================= */}
       <Card className="mb-4">
         <CardBody>
-          <h4 className="fw-semibold">
-            {propertyType === 'flat' ? 'Flat Configuration' : 
-            propertyType === 'villa' ? 'Villa Configuration' : 
-            propertyType === 'commercial' ? 'Area & Layout Details' : 
-            'Area & Structural Details'}
-          </h4>
+          <h4 className="fw-semibold">Flat Configuration</h4>
           <hr />
           <Row className="g-3">
-            {propertyType === 'flat' && 
-            <>
-          <>
-  {/* FORCE STYLE – GUARANTEED */}
-  <style>
-    {`
-      /* Target Choices input box */
-      .choices__inner {
-        background-color: #F9F9FC !important;
-        border: 1px solid #e6e8ee !important;
-      }
-    `}
-  </style>
-
-  <Col lg={4}>
-    <label className="form-label">BHK Configuration</label>
-
-    <ChoicesFormInput className="form-control">
-      <option>Studio</option>
-      <option>1 BHK</option>
-      <option>2 BHK</option>
-      <option>3 BHK</option>
-    </ChoicesFormInput>
-  </Col>
-</>
-
-            <Col lg={4}><TextFormInput control={control} name="carpet_area" label="Carpet Area (Sq.Ft)"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Built-up Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <label className="form-label">Configuration</label>
+              <Controller
+                name="configuration"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Studio">Studio</option>
+                    <option value="1 BHK">1 BHK</option>
+                    <option value="2 BHK">2 BHK</option>
+                    <option value="3 BHK">3 BHK</option>
+                  </select>
+                )}
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="carpet_area"
+                label="Carpet Area (Sq.Ft)"
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="builtup_area"
+                label="Built-up Area (Sq.Ft)"
+              />
+            </Col>
             <Col lg={4}>
               <label className="form-label">Balcony</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
+              <Controller
+                name="balcony"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                )}
+              />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Bathrooms" style={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="bathrooms"
+                label="No. of Bathrooms"
+              />
+            </Col>
             <Col lg={4}>
               <label className="form-label">Kitchen Type</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Open</option>
-                <option>Closed</option>
-              </ChoicesFormInput>
+              <Controller
+                name="kitchen_type"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                )}
+              />
             </Col>
             <Col lg={4}>
               <label className="form-label">Store Room</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
+              <Controller
+                name="store_room"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                )}
+              />
             </Col>
             <Col lg={4}>
               <label className="form-label">Facing</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>East</option>
-                <option>West</option>
-                <option>North</option>
-                <option>South</option>
-              </ChoicesFormInput>
-            </Col></>}
-
-
-            {propertyType === 'villa' && 
-            <>
-            <Col lg={4} >
-              <label className="form-label">Villa Type</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option style ={{ backgroundColor: '#F9F9FC' }}>Independent</option>
-                <option>1 BHK</option>
-                <option>2 BHK</option>
-                <option>3 BHK</option>
-              </ChoicesFormInput>
+              <Controller
+                name="facing"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="East">East</option>
+                    <option value="West">West</option>
+                    <option value="North">North</option>
+                    <option value="South">South</option>
+                  </select>
+                )}
+              />
             </Col>
-            <Col lg={4}>
-              <label className="form-label">BHK Configuration</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Independent</option>
-                <option>1 BHK</option>
-                <option>2 BHK</option>
-                <option>3 BHK</option>
-              </ChoicesFormInput>
-            </Col>
-             <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Carpet Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Built-up Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Plot Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Bedrooms"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Bathrooms"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Living Rooms Count"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}>
-              <label className="form-label">Kitchen Type</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Open</option>
-                <option>Closed</option>
-              </ChoicesFormInput>
-            </Col>
-            <Col lg={4}>
-              <label className="form-label">Store Room</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-
-            <Col lg={4}>
-              <label className="form-label">Servant Room</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-
-            <Col lg={4}>
-              <label className="form-label">Balcony / Sit-out</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-
-            <Col lg={4}>
-              <label className="form-label">Facing</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>East</option>
-                <option>West</option>
-                <option>North</option>
-                <option>South</option>
-              </ChoicesFormInput>
-            </Col></>}
-
-
-            {propertyType === 'commercial' && 
-            <>
-            
-             <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Carpet Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Built-up Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Super Built-up (Optional)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Frontage Width (Feet)"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Ceiling Height (Feet)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Cabins"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Washrooms"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-
-            <Col lg={4}>
-              <label className="form-label">Pantry</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-
-            <Col lg={4}>
-              <label className="form-label">Store Room</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-
-            <Col lg={4}>
-              <label className="form-label">Loading Area</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-            </>}
-
-             {propertyType === 'warehouse' && 
-            <>
-             <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Plot Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Built-up Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-             <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Carpet Area (Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="builtup_area" label="Clear Height(Feet)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Bays" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="No. of Loading docks" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Dock Height (Feet)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Floor Load (MT / Sq.Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Column Spacing (Feet)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-    
-            <Col lg={4}>
-              <label className="form-label">Mezzanine Floor</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Yes</option>
-                <option>No</option>
-              </ChoicesFormInput>
-            </Col>
-           <Col lg={4}><TextFormInput control={control} name="bathrooms" label="Office Space Area" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            </>}
-
-            
           </Row>
         </CardBody>
       </Card>
 
-      {/* ================= OUTDOOR & EXCLUSIVE FEATURES (VILLA ONLY) ================= */}
-      {propertyType === 'villa' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Outdoor & Exclusive Features</h4>
-            <hr />
-            <Row className="g-3">
-              {[
-                'Private Garden /  Lawn','Private Parking','Swiming Pool','Terrace / Rooftop Access','Boundry Wall',
-                'Driveway'
-              ].map(item => (
-                <Col lg={3} key={item}>
-                  <Form.Check type="checkbox" label={item} />
-                </Col>
-              ))}
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* ================= COMMERCIAL INFRASTRUCTURE ================= */}
-      {propertyType === 'commercial' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Commercial Infrastructure</h4>
-            <hr />
-            <Row className="g-3">
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Pwer Load (KW) " style ={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}>
-                <label className="form-label">DG / Power Backup</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Lift Type</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Passanger</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-              <Col lg={4}><TextFormInput control={control} name="security_deposit" label="Fire Safety Compliance"style={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}>
-                <label className="form-label">Emergency Exit</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Parking Availability</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Open</option>
-                  <option>Close</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">CCTV / Security</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* ================= WAREHOUSE INFRASTRUCTURE & UTILITIES ================= */}
-      {propertyType === 'warehouse' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Infrastructure & Utilities</h4>
-            <hr />
-            <Row className="g-3">
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Power Supply (KW)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            
-              <Col lg={4}>
-                <label className="form-label">Transformer Available </label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">DG Set / Backup</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Water Supply Source</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Borewell</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Drainage System</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Internet / Fiber</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* ================= WAREHOUSE LOGISTICS & VEHICLE ACCESS ================= */}
-      {propertyType === 'warehouse' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Logistics & Vehicle Access</h4>
-            <hr />
-            <Row className="g-3">
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Entry Gate Width(Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Road Width(Ft)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Truck Parking Capacity" style={{ backgroundColor: '#F9F9FC' }}/></Col>    
-              <Col lg={4}>
-                <label className="form-label">Container Access</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>20ft</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Turning Radius</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Adequate</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-              <Col lg={4}>
-                <label className="form-label">Weighbridge Nearby</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Yes</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-      
-                        
-      {/* ================= RENTAL & FINANCIAL DETAILS ================= */}
-      {/* ================= RENTAL & FINANCIAL DETAILS ================= */}
-{/* ================= FLAT ================= */}
-{propertyType === 'flat' && (
-  <Card className="mb-4">
-    <CardBody>
-      <h4 className="fw-semibold">Rental & Financial Details</h4>
-      <hr />
-      <Row className="g-3">
-        <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Monthly Rent" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="security_deposit" label="Security Deposit" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="maintenance" label="Maintenance (Monthly)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label">Electricity Type</label>
-          <ChoicesFormInput className="form-control"><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}>
-          <label className="form-label">Water Type</label>
-          <ChoicesFormInput className="form-control"><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Other Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label">Late Fee (% / Amt)</label>
-          <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-            <option>Yes</option>
-            <option>No</option>
-          </ChoicesFormInput>
-        </Col>
-      </Row>
-    </CardBody>
-  </Card>
-)}
-
-
-{/* ================= VILLA ================= */}
-{propertyType === 'villa' && (
-  <Card className="mb-4">
-    <CardBody>
-      <h4 className="fw-semibold">Rental & Financial Details</h4>
-      <hr />
-      <Row className="g-3">
-        <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Monthly Rent" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="security_deposit" label="Security Deposit" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="maintenance" label="Maintenance (Monthly)" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label">Electricity Charges</label>
-          <ChoicesFormInput className="form-control"><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}>
-          <label className="form-label">Water Charges</label>
-          <ChoicesFormInput className="form-control"><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Gardening Charges" style={{ backgroundColor: '#F9F9FC' }} /></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Other Charges" style={{ backgroundColor: '#F9F9FC' }} /></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Late Fee Rule" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-      </Row>
-    </CardBody>
-  </Card>
-)}
-
-
-{/* ================= COMMERCIAL ================= */}
-{propertyType === 'commercial' && (
-  <Card className="mb-4">
-    <CardBody>
-      <h4 className="fw-semibold">Rental & Financial Details</h4>
-      <hr />
-      <Row className="g-3">
-        <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Monthly Rent" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="security_deposit" label="Security Deposit" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="maintenance" label="Maintenance Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>GST Applicable</label>
-          <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-            <option>Yes</option>
-            <option>No</option>
-          </ChoicesFormInput>
-        </Col>
-        <Col lg={4}><TextFormInput control={control} name="maintenance" label="GST %" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Electricity Charges</label>
-          <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}>
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Water Charges</label>
-          <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Other Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Late Fee Rule" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-      </Row>
-    </CardBody>
-  </Card>
-)}
-
-{/* ================= WAREHOUSE ================= */}
-{propertyType === 'warehouse' && (
-  <Card className="mb-4">
-    <CardBody>
-      <h4 className="fw-semibold">Rental & Financial Terms</h4>
-      <hr />
-      <Row className="g-3">
-        <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Monthly Rent" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="security_deposit" label="Security Deposit" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="maintenance" label="Maintenance Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}>
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Electricity Charges</label>
-          <ChoicesFormInput className="form-control"><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}>
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Water Charges</label>
-          <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}><option>Meter</option></ChoicesFormInput>
-        </Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="CAM Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Other Charges" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Rent Escalation %/Year" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-        <Col lg={4}><TextFormInput control={control} name="other_charges" label="Lock-in Period" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-      </Row>
-    </CardBody>
-  </Card>
-)}
-
-     { propertyType === 'warehouse' && (   <Card className="mb-4">
+      <Card className="mb-4">
         <CardBody>
-          <h4 className="fw-semibold">Tenant & Usage Preference</h4>
-          <hr />
-          <label className="form-label">Landlord Name</label>
-          <ChoicesFormInput className="form-control mb-3"style ={{ backgroundColor: '#F9F9FC' }}>
-            <option>Select From Master</option>
-          </ChoicesFormInput>
-
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Allowed Industry Type</label>
-          <Row className="g-3">
-            {['FMCG','Pharma','Ecommerce','Manufacturing','Logistics'].map(t => (
-              <Col lg={3} key={t}>
-                <Form.Check label={t} />
-              </Col>
-            ))}
-          </Row>
-        </CardBody>
-      </Card>)}
-
-      
-          {propertyType === 'warehouse' && ( <Card className="mb-4">
-        <CardBody>
-          <h4 className="fw-semibold">Availability & Status</h4>
+          <h4 className="fw-semibold">Rental & Financial Details</h4>
           <hr />
           <Row className="g-3">
             <Col lg={4}>
-              <label className="form-label">Status</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Vacant</option>
-                <option>Occupied</option>
-              </ChoicesFormInput>
+              <TextFormInput
+                control={control}
+                name="monthly_rent"
+                label="Monthly Rent"
+              />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="available_from" label="Available From" placeholder="dd-mm-yyyy" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="current_tenant" label="Current Tenant" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-          </Row>
-        </CardBody>
-      </Card>)}
-
-
-      {propertyType === 'villa' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Facilities (Villa)</h4>
-            <hr />
-            <Row className="g-3">
-              {[
-                '24x7 Water Supply',
-                'Power Backup',
-                'Security / Guard',
-                'CCTV',
-                'Clubhouse Access',
-                'Gym',
-                'Children’s Play Area',
-                'Internal Roads',
-                'Street Lights',
-                'Gated Community'
-              ].map(item => (
-                <Col lg={3} key={item}>
-                  <Form.Check type="checkbox" label={item} />
-                </Col>
-              ))}
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-        { propertyType === 'villa' && (   <Card className="mb-4">
-        <CardBody>
-          <h4 className="fw-semibold">Tenant Preference</h4>
-          <hr />
-          <label className="form-label">Rental Purpose</label>
-          <ChoicesFormInput className="form-control mb-3" style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: '#F9F9FC' }}>
-            <option>Residential</option>
-            <option>Commercial</option>
-          </ChoicesFormInput>
-
-          <label className="form-label">Tenant Type Allowed</label>
-          <Row className="g-3">
-            {['Bachelor','Family','Company Staff','Labour'].map(t => (
-              <Col lg={3} key={t}>
-                <Form.Check label={t} />
-              </Col>
-            ))}
-          </Row>
-        </CardBody>
-      </Card>)}
-
-      {propertyType === 'commercial' && (
-        <Card className="mb-4">
-          <CardBody>
-            <h4 className="fw-semibold">Business & Tenant Preference</h4>
-            <hr />
-            <Row className="g-3">
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Landlord Name"style={{ backgroundColor: '#F9F9FC' }} /></Col>
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Allowed Business Type" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-              <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Prohibited Business" style={{ backgroundColor: '#F9F9FC' }}/></Col>    
-              <Col lg={4}>
-                <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Lease Type</label>
-                <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                  <option>Company Lease</option>
-                  <option>No</option>
-                </ChoicesFormInput>
-              </Col>
-
-           <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Lease Tenure Year" style ={{ backgroundColor: '#F9F9FC' }}/></Col>    
-           <Col lg={4}><TextFormInput control={control} name="monthly_rent" label="Lock-in Period" style ={{ backgroundColor: '#F9F9FC' }}/></Col>    
-
-            </Row>
-          </CardBody>
-        </Card>
-      )}
-
-          {propertyType === 'commercial' && ( <Card className="mb-4">
-        <CardBody>
-          <h4 className="fw-semibold">Availability & Status</h4>
-          <hr />
-          <Row className="g-3">
             <Col lg={4}>
-              <label className="form-label">Status</label>
-              <ChoicesFormInput className="form-control">
-                <option>Vacant</option>
-                <option>Occupied</option>
-              </ChoicesFormInput>
+              <TextFormInput
+                control={control}
+                name="security_deposit"
+                label="Security Deposit"
+              />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="available_from" label="Available From" placeholder="dd-mm-yyyy" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="current_tenant" label="Current Tenant" style={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="maintenance"
+                label="Maintenance (Monthly)"
+              />
+            </Col>
+            <Col lg={4}>
+              <label className="form-label">Electricity Type</label>
+              <Controller
+                name="electricity_type"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Meter">Meter</option>
+                  </select>
+                )}
+              />
+            </Col>
+            <Col lg={4}>
+              <label className="form-label">Water Type</label>
+              <Controller
+                name="water_type"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Meter">Meter</option>
+                  </select>
+                )}
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="other_charges"
+                label="Other Charges"
+              />
+            </Col>
+            <Col lg={4}>
+              <label className="form-label">Late Fee (% / Amt)</label>
+              <Controller
+                name="late_fee"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                )}
+              />
+            </Col>
           </Row>
         </CardBody>
-      </Card>)}
-      {/* ================= OWNERSHIP ================= */}
-      
-   {(propertyType === 'flat' || propertyType === 'villa') && (  
-     <Card className="mb-2">
+      </Card>
+
+      <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">Ownership</h4>
           <hr />
-           <Row>
-          <Col lg={4} md={6}>
-
-          <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Landlord Name</label>
-          <ChoicesFormInput className="form-control mb-2"style ={{ backgroundColor: '#F9F9FC' }}>
-            <option>Landlord Master</option>
-          
-          </ChoicesFormInput>
-         </Col></Row>
-          
+          <label className="form-label">Landlord ID</label>
+          <Controller
+            name="landlord_id"
+            control={control}
+            render={({ field }) => (
+              <input
+                type="number"
+                className="form-control"
+                placeholder="Enter Landlord ID"
+                min={1}
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) =>
+                  field.onChange(e.target.value === '' ? '' : Number(e.target.value))
+                }
+              />
+            )}
+          />
         </CardBody>
-      </Card>)}
+      </Card>
 
-      {propertyType === 'villa' && ( <Card className="mb-4">
-        <CardBody>
-          <h4 className="fw-semibold">Availability & Status</h4>
-          <hr />
-          <Row className="g-3">
-            <Col lg={4}>
-              <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Status</label>
-              <ChoicesFormInput className="form-control"style ={{ backgroundColor: '#F9F9FC' }}>
-                <option>Vacant</option>
-                <option>Occupied</option>
-              </ChoicesFormInput>
-            </Col>
-            <Col lg={4}><TextFormInput control={control} name="available_from" label="Available From" placeholder="dd-mm-yyyy" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="current_tenant" label="Current Tenant" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-          </Row>
-        </CardBody>
-      </Card>)}
-
-      {/* ================= FACILITIES & AMENITIES ================= */}
-   { propertyType === 'flat' && (
       <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">Facilities & Amenities</h4>
           <hr />
           <Row className="g-3">
             {[
-              'Parking','Lift','Power Backup','Security','CCTV',
-              'Gas Pipeline','Water Supply','Intercom','Fire Safety'
-            ].map(item => (
+              { key: 'Parking', name: 'amenity_Parking' },
+              { key: 'Lift', name: 'amenity_Lift' },
+              { key: 'Power Backup', name: 'amenity_PowerBackup' },
+              { key: 'Security', name: 'amenity_Security' },
+              { key: 'CCTV', name: 'amenity_CCTV' },
+              { key: 'Gas Pipeline', name: 'amenity_GasPipeline' },
+              { key: 'Water Supply', name: 'amenity_WaterSupply' },
+              { key: 'Intercom', name: 'amenity_Intercom' },
+              { key: 'Fire Safety', name: 'amenity_FireSafety' },
+            ].map(({ key: item, name }) => (
               <Col lg={3} key={item}>
-                <Form.Check type="checkbox" label={item} />
+                <Controller
+                  name={name}
+                  control={control}
+                  defaultValue={false}
+                  render={({ field }) => (
+                    <Form.Check
+                      type="checkbox"
+                      label={item}
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  )}
+                />
               </Col>
             ))}
           </Row>
         </CardBody>
-      </Card>)}
+      </Card>
 
-      {/* ================= TENANT PREFERENCE ================= */}
-    {propertyType === 'flat' && (
-  <Card className="mb-3">
-    <CardBody>
+      <Card className="mb-4">
+        <CardBody>
+          <h4 className="fw-semibold">Tenant Preference</h4>
+          <hr />
+          <label className="form-label">Rental Purpose</label>
+          <Controller
+            name="rental_purpose"
+            control={control}
+            render={({ field }) => (
+              <select className="form-control mb-3" {...field}>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+              </select>
+            )}
+          />
 
-      {/* Heading */}
-      <h4 className="fw-semibold mb-3">Tenant Preference</h4>
-      <hr className="mb-4" />
+          <label className="form-label">Tenant Type Allowed</label>
+          <Row className="g-3">
+            {[
+              { label: 'Bachelor', name: 'tenant_Bachelor' },
+              { label: 'Family', name: 'tenant_Family' },
+              { label: 'Company Staff', name: 'tenant_CompanyStaff' },
+              { label: 'Labour', name: 'tenant_Labour' },
+            ].map(({ label: t, name }) => (
+              <Col lg={3} key={t}>
+                <Controller
+                  name={name}
+                  control={control}
+                  defaultValue={false}
+                  render={({ field }) => (
+                    <Form.Check
+                      label={t}
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  )}
+                />
+              </Col>
+            ))}
+          </Row>
+        </CardBody>
+      </Card>
 
-      {/* Rental Purpose */}
-      <Row className="mb-4">
-        <Col lg={4} md={6}>
-          <label className="form-label mb-2">Rental Purpose</label>
-
-          <ChoicesFormInput
-            className="form-control"
-            style={{ backgroundColor: '#F9F9FC' }}
-          >
-            <option>Residential</option>
-            <option>Commercial</option>
-          </ChoicesFormInput>
-        </Col>
-      </Row>
-
-      {/* Tenant Type Allowed */}
-      <label className="form-label mb-3">Tenant Type Allowed</label>
-
-      <div
-        className="p-3 rounded"
-        style={{
-          backgroundColor: '#F9F9FC',
-          border: '1px solid #e6e8ee'
-        }}
-      >
-        <Row className="gx-4 gy-3">
-          {['Bachelor', 'Family', 'Company Staff', 'Labour'].map(t => (
-            <Col lg={3} md={6} key={t}>
-              <Form.Check
-                type="checkbox"
-                label={t}
-                className="fw-medium"
-              />
-            </Col>
-          ))}
-        </Row>
-      </div>
-
-    </CardBody>
-  </Card>
-)}
-
-
-
-
-      {/* ================= AVAILABILITY & STATUS ================= */}
-     {propertyType === 'flat' && ( 
       <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">Availability & Status</h4>
           <hr />
           <Row className="g-3">
             <Col lg={4}>
-              <label className="form-label"style ={{ backgroundColor: '#F9F9FC' }}>Status</label>
-              <ChoicesFormInput className="form-control">
-                <option>Vacant</option>
-                <option>Occupied</option>
-              </ChoicesFormInput>
+              <label className="form-label">Status</label>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <select className="form-control" {...field}>
+                    <option value="Vacant">Vacant</option>
+                    <option value="Occupied">Occupied</option>
+                  </select>
+                )}
+              />
             </Col>
-            <Col lg={4}><TextFormInput control={control} name="available_from" label="Available From" placeholder="dd-mm-yyyy" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="current_tenant" label="Current Tenant" style={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="available_from"
+                label="Available From"
+                placeholder="dd-mm-yyyy"
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="current_tenant"
+                label="Current Tenant"
+              />
+            </Col>
           </Row>
         </CardBody>
-      </Card>)}
+      </Card>
 
-      {/* ================= LOCATION DETAILS ================= */}
       <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">Location Details</h4>
           <hr />
-         <div className="mb-3">
-  <TextFormInput
-  style ={{ backgroundColor: '#F9F9FC' }}
-    control={control}
-    name="address1"
-    label="Address Line 1"
-  />
-</div>
-
-<TextFormInput
-style ={{ backgroundColor: '#F9F9FC' }}
-  control={control}
-  name="address2"
-  label="Address Line 2"
-/>
-
+          <TextFormInput control={control} name="address1" label="Address Line 1" />
+          <TextFormInput control={control} name="address2" label="Address Line 2" />
           <Row className="g-3 mt-1">
-            <Col lg={4}><TextFormInput control={control} name="area" label="Area / Locality" style ={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="city" label="City" style ={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="state" label="State"style ={{ backgroundColor: '#F9F9FC' }} /></Col>
- <Col lg={4}>
-  <div className="mb-3">
-    <label htmlFor="choices-country" className="form-label">
-      Country
-    </label>
-
-    <div className="custom-country-dropdown" >
-      <div 
-        className="country-select-box"style ={{ backgroundColor: '#F9F9FC' }}
-        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-      >
-        <div style={{ backgroundColor: '#F9F9FC',display: 'flex', alignItems: 'center', gap: '10px',  }}>
-          <img 
-            src={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png`}
-            alt={selectedCountry.name}
-            className="country-flag"
-          />
-          <span className="country-name">{selectedCountry.name}</span>
-        </div>
-        <span className="dropdown-arrow">▼</span>
-      </div>
-      
-      {showCountryDropdown && (
-        <div className="country-dropdown-list">
-          {countries.map((country) => (
-            <div
-              key={country.code}
-              className="country-dropdown-item"
-              onClick={() => {
-                setSelectedCountry(country);
-                setShowCountryDropdown(false);
-              }}
-            >
-              <img 
-                src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
-                alt={country.name}
-                className="country-flag"
-              />
-              <span className="country-name">{country.name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-</Col>             
-            <Col lg={4}><TextFormInput control={control} name="po_box" label="PO BOX" style ={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="map_url" label="Google Map URL"style ={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="area" label="Area / Locality" />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="city" label="City" />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="state" label="State" />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="country" label="Country" />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="po_box" label="PO BOX" />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput control={control} name="map_url" label="Google Map URL" />
+            </Col>
           </Row>
         </CardBody>
       </Card>
 
-      {/* ================= INTERNAL TRACKING ================= */}
       <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">Internal Tracking</h4>
           <hr />
-          <TextAreaFormInput control={control} name="internal_notes" label="Internal Notes" style={{ backgroundColor: '#F9F9FC' }}/>
-          <TextFormInput control={control} name="created_by" label="Created By"style={{ backgroundColor: '#F9F9FC' }} />
+          <TextAreaFormInput
+            control={control}
+            name="internal_notes"
+            label="Internal Notes"
+          />
+          <TextFormInput control={control} name="created_by" label="Created By" />
         </CardBody>
       </Card>
 
-      {/* ================= SYSTEM FIELDS ================= */}
       <Card className="mb-4">
         <CardBody>
           <h4 className="fw-semibold">System Fields (Auto)</h4>
           <hr />
           <Row className="g-3">
-            <Col lg={4}><TextFormInput control={control} name="created_time" label="Created Time" placeholder="Time Stamp" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="updated_by" label="Last Updated By" style={{ backgroundColor: '#F9F9FC' }}/></Col>
-            <Col lg={4}><TextFormInput control={control} name="updated_time" label="Last Updated Time" style={{ backgroundColor: '#F9F9FC' }}/></Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="created_time"
+                label="Created Time"
+                placeholder="TimeStamp"
+                readOnly
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="updated_by"
+                label="Last Updated By"
+                readOnly
+              />
+            </Col>
+            <Col lg={4}>
+              <TextFormInput
+                control={control}
+                name="updated_time"
+                label="Last Updated Time"
+                readOnly
+              />
+            </Col>
           </Row>
         </CardBody>
       </Card>
 
-      {/* ================= BUTTONS ================= */}
-      <div className="mb-3 rounded">
-        <Row className="justify-content-end g-2">
-          <Col lg={2}>
-            <Button variant="outline-primary" type="submit" className="w-100">
-              Cancel
-            </Button>
-          </Col>
-          <Col lg={2}>
-            <Button 
-  variant="primary" 
-  className="w-100"
-  style={{ backgroundColor: '#5D7186', borderColor: '#5D7186' }}
->
-  Add Property
-</Button>
-          </Col>
-        </Row>
+      <div className="d-flex justify-content-end gap-2 mb-4">
+        <Button variant="outline-secondary">Cancel</Button>
+        <Button variant="primary" type="submit">
+          {isUpdate ? 'Update Property' : 'Add Property'}
+        </Button>
       </div>
-
     </form>
   );
 };
 
 export default PropertyAdd;
+
