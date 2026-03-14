@@ -1,6 +1,7 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { API_BASE_URL, AUTH_TOKEN } from '@/constants/api';
 import httpClient from '@/helpers/httpClient';
+import { getPropertyImageUrl } from '@/utils/imageStorage';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, CardBody, CardFooter, Col, Row, Spinner } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
@@ -279,9 +280,7 @@ const PropertiesData = ({ filters = {} }) => {
     const bath = fd?.no_of_bathrooms ?? '—';
     const size = d?.dimensionAreaSqft ?? pd?.carpet_area_sqft ?? '—';
     const flor = d?.floor ?? fd?.floor_number ?? '—';
-    const image =
-      (d?.photos && d.photos[0]) ||
-      'https://via.placeholder.com/400x260?text=Property';
+    const image = getPropertyImageUrl(d?.propertyId, d?.photos);
 
     const landlordName =
       pd?.landlord_name ||

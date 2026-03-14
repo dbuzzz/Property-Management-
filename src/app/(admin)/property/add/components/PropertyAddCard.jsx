@@ -2,7 +2,7 @@ import properties1 from '@/assets/images/properties/p-1.jpg';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { Button, Card, CardBody, CardFooter, Col, Row } from 'react-bootstrap';
 
-const PropertyAddCard = ({ preview = {}, mode = 'create' }) => {
+const PropertyAddCard = ({ preview = {}, mainPhoto, mode = 'create' }) => {
   const name = preview.building_name || preview.name || '—';
   const address = preview.address || '—';
   const price = preview.price || '0';
@@ -11,13 +11,14 @@ const PropertyAddCard = ({ preview = {}, mode = 'create' }) => {
   const area = preview.area || '—';
   const floor = preview.floor || '—';
   const statusBadge = preview.status || 'For Rent';
+  const imgSrc = mainPhoto || properties1;
 
   return (
     <Col xl={3} lg={4}>
       <Card>
         <CardBody>
           <div className="position-relative">
-            <img src={properties1} alt="properties" className="img-fluid rounded bg-light" />
+            <img src={imgSrc} alt="properties" className="img-fluid rounded bg-light" style={{ objectFit: 'cover', aspectRatio: '4/3' }} />
             <span className="position-absolute top-0 end-0 p-1">
               <span className="badge bg-success text-light fs-13">{statusBadge}</span>
             </span>
@@ -29,39 +30,28 @@ const PropertyAddCard = ({ preview = {}, mode = 'create' }) => {
             <h4 className="fw-semibold mt-2 text-muted">₹{price}</h4>
           </div>
           <Row className="mt-2 g-2">
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:bed-broken" className="align-middle" />
-                </span>
-                &nbsp;{beds} Beds
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:bed-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">{beds} Beds</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:bath-broken" className="align-middle" />
-                </span>
-                &nbsp;{baths} Bath
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:bath-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">{baths} Bath</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:scale-broken" className="align-middle" />
-                </span>
-                &nbsp;{area}ft
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:scale-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">{area} ft</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon
-                    icon="solar:double-alt-arrow-up-broken"
-                    className="align-middle"
-                  />
-                </span>
-                &nbsp;{floor} Floor
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:double-alt-arrow-up-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">{floor} Floor</span>
               </span>
             </Col>
           </Row>

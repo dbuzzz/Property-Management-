@@ -42,16 +42,16 @@ const LeftSideBarToggle = () => {
   const {
     menu: { size },
     changeMenu: { size: changeMenuSize },
-    toggleBackdrop
   } = useLayoutContext();
 
   const pathname = useLocation();
   const isFirstRender = useRef(true);
 
   const handleMenuSize = () => {
-
-    if (size !== 'default') {
+    if (size === 'hidden') {
       changeMenuSize('default');
+    } else {
+      changeMenuSize('hidden');
     }
   };
 
@@ -59,7 +59,6 @@ const LeftSideBarToggle = () => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
     }
-    // ❌ auto hide/backdrop disable
   }, [pathname]);
 
   return (

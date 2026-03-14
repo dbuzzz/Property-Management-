@@ -10,17 +10,17 @@ const useLayoutContext = () => {
   }
   return context;
 };
-const getPreferredTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+// UI reference: light main content (#f9f9fc), white cards (#ffffff), dark sidebar (#1c252e)
 const LayoutProvider = ({
   children
 }) => {
   const queryParams = useQueryParams();
   const override = !!(queryParams.layout_theme || queryParams.topbar_theme || queryParams.menu_theme || queryParams.menu_size);
   const INIT_STATE = {
-    theme: queryParams['layout_theme'] ? queryParams['layout_theme'] : getPreferredTheme(),
+    theme: queryParams['layout_theme'] ? queryParams['layout_theme'] : 'light',
     topbarTheme: queryParams['topbar_theme'] ? queryParams['topbar_theme'] : 'light',
     menu: {
-      theme: queryParams['menu_theme'] ? queryParams['menu_theme'] : 'light',
+      theme: queryParams['menu_theme'] ? queryParams['menu_theme'] : 'dark',
       size: queryParams['menu_size'] ? queryParams['menu_size'] : 'default'
     }
   };
@@ -106,17 +106,18 @@ const LayoutProvider = ({
   }, [offcanvasStates.showBackdrop]);
   
   useEffect(() => {
-    toggleDocumentAttribute('data-bs-theme', settings.theme);
-    toggleDocumentAttribute('data-topbar-color', settings.topbarTheme);
-    toggleDocumentAttribute('data-menu-color', settings.menu.theme);
+    // Enforce reference UI: light main + topbar, dark sidebar (#1c252e)
+    toggleDocumentAttribute('data-bs-theme', 'light');
+    toggleDocumentAttribute('data-topbar-color', 'light');
+    toggleDocumentAttribute('data-menu-color', 'dark');
     toggleDocumentAttribute('data-menu-size', settings.menu.size);
     return () => {
-      toggleDocumentAttribute('data-bs-theme', settings.theme, true);
-      toggleDocumentAttribute('data-topbar-color', settings.topbarTheme, true);
-      toggleDocumentAttribute('data-menu-color', settings.menu.theme, true);
+      toggleDocumentAttribute('data-bs-theme', 'light', true);
+      toggleDocumentAttribute('data-topbar-color', 'light', true);
+      toggleDocumentAttribute('data-menu-color', 'dark', true);
       toggleDocumentAttribute('data-menu-size', settings.menu.size, true);
     };
-  }, [settings]);
+  }, [settings.menu.size]);
   const resetSettings = () => updateSettings(INIT_STATE);
   return <ThemeContext.Provider value={useMemo(() => ({
     ...settings,

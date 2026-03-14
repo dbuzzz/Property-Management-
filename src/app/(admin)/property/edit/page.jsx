@@ -1,7 +1,8 @@
-import FileUpload from '@/components/FileUpload';
+import PropertyPhotoUpload from '@/components/PropertyPhotoUpload';
 import PageTitle from '@/components/PageTitle';
 import PropertyAdd from '@/app/(admin)/property/add/components/PropertyAdd';
 import PropertyAddCard from '@/app/(admin)/property/add/components/PropertyAddCard';
+import { getPropertyPhotos } from '@/utils/imageStorage';
 import { Card, CardBody, Col, Row } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
@@ -40,6 +41,11 @@ const PropertyEditPage = () => {
   }, [property]);
 
   const [preview, setPreview] = useState(initialPreview);
+  const propertyId = property?.propertyId ?? property?.property_id;
+  const [uploadedPhotos, setUploadedPhotos] = useState(() =>
+    propertyId ? getPropertyPhotos(propertyId) : []
+  );
+  const mainPhoto = uploadedPhotos[0] || (property?.photos?.[0]) || null;
 
   if (!property) {
     return (
@@ -59,10 +65,19 @@ const PropertyEditPage = () => {
     <>
       <PageTitle title="Update Property" subName="" />
       <Row>
-        <PropertyAddCard preview={preview} mode="update" />
+        <PropertyAddCard preview={preview} mainPhoto={mainPhoto} mode="update" />
         <Col xl={9} lg={8}>
-          <FileUpload title="Property Photo" />
-          <PropertyAdd initialData={property} mode="update" onFormValuesChange={setPreview} />
+          <PropertyPhotoUpload
+            title="Property Photo"
+            photos={uploadedPhotos}
+            onPhotosChange={setUploadedPhotos}
+          />
+          <PropertyAdd
+            initialData={property}
+            mode="update"
+            onFormValuesChange={setPreview}
+            uploadedPhotos={uploadedPhotos}
+          />
         </Col>
       </Row>
     </>

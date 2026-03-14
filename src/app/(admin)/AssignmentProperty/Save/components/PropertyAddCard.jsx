@@ -21,36 +21,28 @@ const PropertyAddCard = () => {
             <h4 className="fw-semibold mt-2 text-muted">{}OMR8,930.00</h4>
           </div>
           <Row className="mt-2 g-2">
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:bed-broken" className="align-middle" />
-                </span>
-                &nbsp;5 Beds
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:bed-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">5 Beds</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:bath-broken" className="align-middle" />
-                </span>
-                &nbsp;4 Bath
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:bath-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">4 Bath</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:scale-broken" className="align-middle" />
-                </span>
-                &nbsp;1400ft
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:scale-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">1400 ft</span>
               </span>
             </Col>
-            <Col lg={3} xs={3}>
-              <span className="badge bg-light-subtle text-muted border fs-12">
-                <span className="fs-16">
-                  <IconifyIcon icon="solar:double-alt-arrow-up-broken" className="align-middle" />
-                </span>
-                &nbsp;3 Floor
+            <Col xs={6}>
+              <span className="badge bg-light-subtle text-muted border fs-12 d-inline-flex align-items-center gap-1 w-100" style={{ padding: '8px 6px' }}>
+                <IconifyIcon icon="solar:double-alt-arrow-up-broken" className="fs-14 flex-shrink-0" />
+                <span className="text-truncate">3 Floor</span>
               </span>
             </Col>
           </Row>

@@ -2,10 +2,11 @@ import properties11 from '@/assets/images/properties/p-11.jpg';
 import properties12 from '@/assets/images/properties/p-2.jpg';
 import properties13 from '@/assets/images/properties/p-3.jpg';
 import properties14 from '@/assets/images/properties/p-4.jpg';
-import properties15 from '@/assets/images/properties/p-5.jpg';  // ✅ YE ADD KARO
-import avatar from '@/assets/images/users/avatar-1.jpg';  // ✅ YE ADD KARO (ya jo bhi avatar image ho)
+import properties15 from '@/assets/images/properties/p-5.jpg';
+import avatar from '@/assets/images/users/avatar-1.jpg';
 
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import { getPropertyPhotos } from '@/utils/imageStorage';
 import { currency } from '@/context/constants';
 import {
   Button, 
@@ -87,6 +88,15 @@ const PropertyDetails = ({ property }) => {
   const defaultAmenities = ['Parking', 'Private Garden', 'Swimming Pool', 'Power Backup', 'CCTV', 'Gated Community'];
   const displayAmenities = amenitiesList.length > 0 ? amenitiesList : defaultAmenities;
 
+  const propertyId = d.propertyId ?? d.property_id;
+  const localPhotos = useMemo(() => (propertyId ? getPropertyPhotos(propertyId) : []), [propertyId]);
+  const apiPhotos = d.photos && Array.isArray(d.photos) ? d.photos : [];
+  const photoUrls = useMemo(() => {
+    const combined = localPhotos.length > 0 ? localPhotos : apiPhotos;
+    const fallbacks = [properties11, properties12, properties13, properties14];
+    return [combined[0] || fallbacks[0], combined[1] || fallbacks[1], combined[2] || fallbacks[2], combined[3] || fallbacks[3]];
+  }, [localPhotos, apiPhotos]);
+
   const createdByName = d.createdBy?.name || '—';
   const createdAtStr = formatDate(d.createdAt);
   const updatedAtStr = formatDate(d.updatedAt);
@@ -125,38 +135,16 @@ const PropertyDetails = ({ property }) => {
             <CardBody>
               <div className="position-relative">
                 <div className="row g-2">
-                  <div className="col-6">
-                    <img 
-                      src={properties11} 
-                      alt="property 1" 
-                      className="img-fluid rounded w-100" 
-                      style={{height: '250px', objectFit: 'cover'}} 
-                    />
-                  </div>
-                  <div className="col-6">
-                    <img 
-                      src={properties12} 
-                      alt="property 2" 
-                      className="img-fluid rounded w-100" 
-                      style={{height: '250px', objectFit: 'cover'}} 
-                    />
-                  </div>
-                  <div className="col-6">
-                    <img 
-                      src={properties13} 
-                      alt="property 3" 
-                      className="img-fluid rounded w-100" 
-                      style={{height: '250px', objectFit: 'cover'}} 
-                    />
-                  </div>
-                  <div className="col-6">
-                    <img 
-                      src={properties14} 
-                      alt="property 4" 
-                      className="img-fluid rounded w-100" 
-                      style={{height: '250px', objectFit: 'cover'}} 
-                    />
-                  </div>
+                  {photoUrls.map((src, idx) => (
+                    <div className="col-6" key={idx}>
+                      <img
+                        src={src}
+                        alt={`property ${idx + 1}`}
+                        className="img-fluid rounded w-100"
+                        style={{ height: '250px', objectFit: 'cover' }}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardBody>

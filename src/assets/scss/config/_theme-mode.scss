@@ -45,9 +45,9 @@ html[data-menu-color="light"]{
 }
 
 
-/* Main Menu Dark */
+/* Main Menu Dark - sidebar colour #1c252e (reference UI) */
 html[data-menu-color="dark"] {
-    --#{$prefix}main-nav-bg:                               #1C252E;
+    --#{$prefix}main-nav-bg:                               #1c252e;
     --#{$prefix}main-nav-item-color:                       #a8b2b5;
     --#{$prefix}main-nav-item-hover-bg:                    #{rgba($white, 0.06)};
     --#{$prefix}main-nav-item-hover-color:                 #{$white};
@@ -59,7 +59,7 @@ html[data-menu-color="dark"] {
 /* Main Menu Dark (Dark Mode Only) */
 html[data-bs-theme="dark"][data-menu-color="dark"],
 html[data-bs-theme="dark"][data-menu-color="light"] {
-    --#{$prefix}main-nav-bg:                               #1C252E;
+    --#{$prefix}main-nav-bg:                               #1c252e;
     --#{$prefix}main-nav-item-color:                       #afb9cf;
     --#{$prefix}main-nav-item-hover-bg:                    #303943;
     --#{$prefix}main-nav-item-hover-color:                 #{$white};
@@ -68,11 +68,15 @@ html[data-bs-theme="dark"][data-menu-color="light"] {
 }
 
 
-/* Topbar Light */
+/* Topbar Light - match reference UI */
 html[data-topbar-color="light"] {
     --#{$prefix}topbar-bg:                                 #{$white};
     --#{$prefix}topbar-item-color:                         #707793;
     --#{$prefix}topbar-search-bg:                          #e8edf1;
+
+    header {
+        background-color: #{$white};
+    }
 }
 
 
@@ -90,4 +94,15 @@ html[data-bs-theme="dark"][data-topbar-color="light"] {
     --#{$prefix}topbar-bg:                                 #141A21;
     --#{$prefix}topbar-item-color:                         #afb9cf;
     --#{$prefix}topbar-search-bg:                          #303943;
+}
+
+
+/* Reference UI: light main background #f9f9fc, cards #ffffff */
+html:not([data-bs-theme="dark"]) {
+    .page-content {
+        background-color: #f9f9fc;
+    }
+    .card {
+        background-color: #ffffff;
+    }
 }

@@ -3,6 +3,7 @@ import TextFormInput from '@/components/from/TextFormInput';
 import TextAreaFormInput from '@/components/from/TextAreaFormInput';
 import { API_BASE_URL, AUTH_TOKEN } from '@/constants/api';
 import httpClient from '@/helpers/httpClient';
+import { savePropertyPhotos } from '@/utils/imageStorage';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Card, CardBody, Col, Row, Form, Button } from 'react-bootstrap';
 import { Controller, useForm } from 'react-hook-form';
@@ -95,6 +96,14 @@ function sanitizePayload(obj) {
   return obj;
 }
 
+/** API expects photos to be URLs only; base64 data URLs cause validation error. */
+function photosForApi(photos) {
+  if (!Array.isArray(photos)) return [];
+  return photos.filter(
+    (p) => typeof p === 'string' && (p.startsWith('http://') || p.startsWith('https://'))
+  );
+}
+
 function getDefaultsFromProperty(prop) {
   if (!prop) return undefined;
   const pd = prop.propertyDetails ?? {};
@@ -135,7 +144,7 @@ function getDefaultsFromProperty(prop) {
   };
 }
 
-const PropertyAdd = ({ initialData = null, mode = 'create', onFormValuesChange }) => {
+const PropertyAdd = ({ initialData = null, mode = 'create', onFormValuesChange, uploadedPhotos = [] }) => {
   const isUpdate = mode === 'update';
   const defaults = getDefaultsFromProperty(initialData);
 
@@ -245,7 +254,7 @@ const PropertyAdd = ({ initialData = null, mode = 'create', onFormValuesChange }
         advance_amount_rent: 0,
         expected_rent: toStr(values.monthly_rent ?? ''),
         agreement_id: 0,
-        photos: [],
+        photos: photosForApi(uploadedPhotos),
         videos: [],
         assigned_to: { user_id: assignedUserId },
         property_details,
@@ -360,14 +369,19 @@ const PropertyAdd = ({ initialData = null, mode = 'create', onFormValuesChange }
             'Content-Type': 'application/json',
           },
         });
+        savePropertyPhotos(initialData.propertyId, uploadedPhotos);
         alert('Property updated successfully.');
       } else {
-        await httpClient.post(`${API_BASE_URL}/property/create/`, sanitized, {
+        const res = await httpClient.post(`${API_BASE_URL}/property/create/`, sanitized, {
           headers: {
             Authorization: `Bearer ${AUTH_TOKEN}`,
             'Content-Type': 'application/json',
           },
         });
+        const propertyId = res?.data?.propertyId ?? res?.data?.property_id ?? res?.data?.id;
+        if (propertyId && uploadedPhotos.length > 0) {
+          savePropertyPhotos(propertyId, uploadedPhotos);
+        }
         alert('Property added successfully.');
       }
     } catch (e) {
